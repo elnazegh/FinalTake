@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FinalTake</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+  <header class="site-header">
+    <div class="logo">
+      <a href="index.html">FinalTake</a>
+    </div>
+
+    <nav class="main-nav" aria-label="Main navigation">
+      <a href="index.html" class="active">Home</a>
+      <a href="#">Movies</a>
+      <a href="#">TV Shows</a>
+      <a href="#">Books</a>
+      <a href="#">Games</a>
+    </nav>
+
+    <div class="header-actions">
+      <a href="pages/login.html" class="login-link">Log In</a>
+      <a href="pages/signup.html" class="signup-button">Sign Up</a>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- HERO SECTION -->
+    <section class="hero">
+      <div class="hero-content">
+        <p class="hero-label">Your entertainment. Your community.</p>
+
+        <h1>Discover. Rate. Review. Connect.</h1>
+
+        <p class="hero-description">
+          Explore movies, TV shows, books, and games.
+          Share your opinions, discover new favorites,
+          and see what the FinalTake community is talking about.
+        </p>
+
+        <form class="hero-search">
+          <label for="media-search" class="sr-only">
+            Search for media
+          </label>
+
+          <input
+            type="search"
+            id="media-search"
+            placeholder="Search movies, shows, books, or games..."
+          >
+
+          <button type="submit">Search</button>
+        </form>
+
+        <div class="hero-buttons">
+          <a href="#trending" class="primary-button">
+            Explore Media
+          </a>
+
+          <a href="pages/signup.html" class="secondary-button">
+            Join FinalTake
+          </a>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- TRENDING SECTION -->
+    <section class="trending" id="trending">
+      <div class="section-heading">
+        <div>
+          <p class="section-label">Discover</p>
+          <h2>Trending Now</h2>
+        </div>
+
+        <a href="#" class="view-all">View All</a>
+      </div>
+
+      <div class="media-grid">
+
+        <article class="media-card">
+          <div class="card-image movie-card">
+            <span>Movie</span>
+          </div>
+
+          <div class="card-content">
+            <h3>Popular Movies</h3>
+            <p>Discover movies people are rating and reviewing now.</p>
+            <a href="#">Browse Movies</a>
+          </div>
+        </article>
+
+        <article class="media-card">
+          <div class="card-image tv-card">
+            <span>TV</span>
+          </div>
+
+          <div class="card-content">
+            <h3>Trending TV Shows</h3>
+            <p>See what series the FinalTake community is discussing.</p>
+            <a href="#">Browse TV Shows</a>
+          </div>
+        </article>
+
+        <article class="media-card">
+          <div class="card-image book-card">
+            <span>Book</span>
+          </div>
+
+          <div class="card-content">
+            <h3>Popular Books</h3>
+            <p>Find highly rated books and your next great read.</p>
+            <a href="#">Browse Books</a>
+          </div>
+        </article>
+
+        <article class="media-card">
+          <div class="card-image game-card">
+            <span>Game</span>
+          </div>
+
+          <div class="card-content">
+            <h3>Popular Games</h3>
+            <p>Explore games and community ratings across genres.</p>
+            <a href="#">Browse Games</a>
+          </div>
+        </article>
+
+      </div>
+    </section>
+
+
+    <!-- COMMUNITY SECTION -->
+    <section class="community">
+      <div class="section-heading">
+        <div>
+          <p class="section-label">Community</p>
+          <h2>What People Are Saying</h2>
+        </div>
+      </div>
+
+      <div class="review-grid">
+
+        <article class="review-card">
+          <div class="review-stars">★★★★★</div>
+          <h3>Interstellar</h3>
+          <p>
+            Amazing visuals, emotional story, and one of my favorite
+            science-fiction movies.
+          </p>
+          <span>@moviefan</span>
+        </article>
+
+        <article class="review-card">
+          <div class="review-stars">★★★★☆</div>
+          <h3>Sample Book</h3>
+          <p>
+            A great read with memorable characters and a strong ending.
+          </p>
+          <span>@booklover</span>
+        </article>
+
+        <article class="review-card">
+          <div class="review-stars">★★★★★</div>
+          <h3>Sample Game</h3>
+          <p>
+            Beautiful world, fun gameplay, and definitely worth playing.
+          </p>
+          <span>@gamer01</span>
+        </article>
+
+      </div>
+    </section>
+
+
+    <!-- CALL TO ACTION -->
+    <section class="cta">
+      <h2>Ready to share your FinalTake?</h2>
+
+      <p>
+        Create an account to rate media, write reviews,
+        and connect with other entertainment fans.
+      </p>
+
+      <a href="pages/signup.html" class="primary-button">
+        Create Account
+      </a>
+    </section>
+
+  </main>
+
+
+  <footer class="site-footer">
+    <div>
+      <h3>FinalTake</h3>
+      <p>Discover. Rate. Review. Connect.</p>
+    </div>
+
+    <p>&copy; 2026 FinalTake</p>
+  </footer>
+
+
+  <script src="js/app.js"></script>
+
+</body>
+</html>
