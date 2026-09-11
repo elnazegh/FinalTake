@@ -604,6 +604,7 @@ a {
 a:focus-visible,
 button:focus-visible,
 input:focus-visible {
-  outline: 3px solid #fbbf24;
+  outline: 3px solid #38bdf8;
   outline-offset: 3px;
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.8);
 }
