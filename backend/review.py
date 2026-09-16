@@ -11,7 +11,6 @@ class Review:
 
     def set_text(self, text):
         """Set the review text."""
-
         if not isinstance(text, str):
             raise ValueError("Review must be text.")
 
