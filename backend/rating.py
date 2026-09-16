@@ -9,7 +9,6 @@ class Rating:
 
     def set_rating(self, value):
         """Create or update a rating."""
-
         if not self.is_valid_rating(value):
             raise ValueError(
                 "Rating must be between 0.5 and 5.0 "
