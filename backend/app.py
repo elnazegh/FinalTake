@@ -4,6 +4,44 @@ from database import get_db_connection
 
 app = Flask(__name__)
 
+media_items = [
+    {
+        "id": "1",
+        "title": "The Dark Knight",
+        "type": "movie",
+        "imageUrl": None,
+        "releaseYear": 2008
+    },
+    {
+        "id": "2",
+        "title": "Dark",
+        "type": "tv",
+        "imageUrl": None,
+        "releaseYear": 2017
+    },
+    {
+        "id": "3",
+        "title": "Darkest Hour",
+        "type": "movie",
+        "imageUrl": None,
+        "releaseYear": 2017
+    },
+    {
+        "id": "4",
+        "title": "Dune",
+        "type": "book",
+        "imageUrl": None,
+        "releaseYear": 1965
+    },
+    {
+        "id": "5",
+        "title": "Dark Souls",
+        "type": "game",
+        "imageUrl": None,
+        "releaseYear": 2011
+    }
+]
+
 @app.after_request
 def add_cors_headers(response):
     response.headers["Access-Control-Allow-Origin"] = "http://127.0.0.1:5500"
@@ -62,16 +100,16 @@ def search():
             "results": []
         }), 200
 
+    normalized_query = query.casefold()
+
+    results = [
+        media
+        for media in media_items
+        if normalized_query in media["title"].casefold()
+    ]
+
     return jsonify({
-        "results": [
-            {
-                "id": "test-1",
-                "title": "Test Media",
-                "type": "movie",
-                "imageUrl": None,
-                "releaseYear": 2026
-            }
-        ]
+        "results": results
     }), 200
 
 # --------------------------------------------------
