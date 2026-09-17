@@ -156,7 +156,6 @@ a {
 }
 
 .hero-search input:focus {
-  outline: none;
   border-color: #fbbf24;
 }
 
@@ -554,7 +553,6 @@ a {
 }
 
 .auth-card input:focus {
-  outline: none;
   border-color: #fbbf24;
 
   box-shadow:
@@ -607,4 +605,22 @@ input:focus-visible {
   outline: 3px solid #38bdf8;
   outline-offset: 3px;
   box-shadow: 0 0 8px rgba(56, 189, 248, 0.8);
+}
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+.hero-search input:focus-visible,
+.auth-card input:focus-visible {
+  outline: 3px solid #38bdf8;
+  outline-offset: 3px;
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.8);
+}
+.hero-search input,
+.auth-card input {
+  color: #e0f2fe;
+}
+
+.hero-search input::placeholder,
+.auth-card input::placeholder {
+  color: #94a3b8;
 }
