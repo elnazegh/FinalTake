@@ -1,9 +1,13 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from database import get_db_connection
 
 
 app = Flask(__name__)
 
+@app.after_request
+def add_cors_headers(response):
+    response.headers["Access-Control-Allow-Origin"] = "http://127.0.0.1:5500"
+    return response
 
 # --------------------------------------------------
 # Basic backend route
@@ -45,6 +49,30 @@ def health_check():
             "error": str(error)
         }), 500
 
+# --------------------------------------------------
+# Search route
+# --------------------------------------------------
+
+@app.route("/api/search", methods=["GET"])
+def search():
+    query = request.args.get("query", "").strip()
+
+    if not query:
+        return jsonify({
+            "results": []
+        }), 200
+
+    return jsonify({
+        "results": [
+            {
+                "id": "test-1",
+                "title": "Test Media",
+                "type": "movie",
+                "imageUrl": None,
+                "releaseYear": 2026
+            }
+        ]
+    }), 200
 
 # --------------------------------------------------
 # Future account routes
