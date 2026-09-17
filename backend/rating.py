@@ -9,6 +9,7 @@ class Rating:
 
     def set_rating(self, value):
         """Create or update a rating."""
+
         if not self.is_valid_rating(value):
             raise ValueError(
                 "Rating must be between 0.5 and 5.0 "
@@ -26,7 +27,7 @@ class Rating:
         if not isinstance(value, (int, float)):
             return False
 
-        if value < 0.5 or value > 5.0:
+        if value < Rating.MIN_RATING or value > Rating.MAX_RATING:
             return False
 
         # Valid ratings multiplied by 2 should be whole numbers.
@@ -34,4 +35,4 @@ class Rating:
         # 3.5 * 2 = 7
         # 4.0 * 2 = 8
         # 3.7 * 2 = 7.4 (invalid)
-        return (value * 2).is_integer()
+        return (float(value) * 2).is_integer()
