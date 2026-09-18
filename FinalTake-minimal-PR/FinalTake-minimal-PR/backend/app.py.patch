@@ -1,0 +1,13 @@
+--- /mnt/data/minimal_pr_work/latest/FinalTake-main/backend/app.py	2026-09-17 20:59:37.000000000 +0000
++++ /mnt/data/minimal_pr_work/merged/FinalTake-merged-sprint1/backend/app.py	2026-09-17 23:49:29.000000000 +0000
+@@ -1,8 +1,10 @@
+ from flask import Flask, jsonify
+ from database import get_db_connection
++from media_routes import media_api
+ 
+ 
+ app = Flask(__name__)
++app.register_blueprint(media_api, url_prefix="/api")
+ 
+ 
+ # --------------------------------------------------
