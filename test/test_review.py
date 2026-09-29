@@ -41,5 +41,68 @@ class TestReviewCharacterLimit(unittest.TestCase):
             )
 
 
+class TestReviewEditingAndDeletion(unittest.TestCase):
+
+    def test_edit_review(self):
+        review = Review(
+            user_id=1,
+            media_id=101,
+            rating=4.5,
+            text="Original review"
+        )
+
+        review.edit_review("Updated review")
+
+        self.assertEqual(review.text, "Updated review")
+
+    def test_edit_review_preserves_associations(self):
+        review = Review(
+            user_id=1,
+            media_id=101,
+            rating=4.5,
+            text="Original review"
+        )
+
+        review.edit_review("Updated review")
+
+        self.assertEqual(review.user_id, 1)
+        self.assertEqual(review.media_id, 101)
+        self.assertEqual(review.rating, 4.5)
+
+    def test_edit_review_cannot_be_empty(self):
+        review = Review(
+            user_id=1,
+            media_id=101,
+            rating=4.5,
+            text="Original review"
+        )
+
+        with self.assertRaises(ValueError):
+            review.edit_review("")
+
+    def test_edit_review_cannot_exceed_5000_characters(self):
+        review = Review(
+            user_id=1,
+            media_id=101,
+            rating=4.5,
+            text="Original review"
+        )
+
+        with self.assertRaises(ValueError):
+            review.edit_review("a" * 5001)
+
+    def test_delete_review(self):
+        review = Review(
+            user_id=1,
+            media_id=101,
+            rating=4.5,
+            text="Review to delete"
+        )
+
+        review.delete_review()
+
+        self.assertIsNone(review.text)
+
+
 if __name__ == "__main__":
     unittest.main()
