@@ -26,8 +26,17 @@ jobs:
           cache: pip
           cache-dependency-path: backend/requirements.txt
 
+      - name: Generate build version
+        run: |
+          SHORT_SHA=$(echo "${GITHUB_SHA}" | cut -c1-7)
+          BUILD_VERSION="build-${GITHUB_RUN_NUMBER}-${SHORT_SHA}"
+          echo "BUILD_VERSION=${BUILD_VERSION}" >> "$GITHUB_ENV"
+          echo "Build version: ${BUILD_VERSION}"
+
       - name: Install dependencies
         run: pip install -r requirements.txt
 
       - name: Run backend tests
-        run: python -m unittest discover -p "test_*.py" -v
+        run: |
+          echo "Running tests for ${BUILD_VERSION}"
+          python -m unittest discover -p "test_*.py" -v
