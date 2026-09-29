@@ -24,7 +24,9 @@ while True:
     print("2. Delete Rating")
     print("3. Write Review")
     print("4. View Review")
-    print("5. Exit")
+    print("5. Edit Review")
+    print("6. Delete Review")
+    print("7. Exit")
 
     choice = input("\nChoose an option: ")
 
@@ -86,6 +88,28 @@ while True:
             print(f"Review: {review.text}")
 
     elif choice == "5":
+        if review is None:
+            print("You have not written a review yet.")
+        else:
+            print(f"\nCurrent Review: {review.text}")
+            new_text = input("Enter your updated review: ")
+
+            try:
+                review.edit_review(new_text)
+                print("Review updated successfully!")
+
+            except ValueError as error:
+                print(f"Error: {error}")
+
+    elif choice == "6":
+        if review is None:
+            print("You have no review to delete.")
+        else:
+            review.delete_review()
+            review = None
+            print("Review deleted.")
+
+    elif choice == "7":
         print("Exiting FinalTake test.")
         break
 
