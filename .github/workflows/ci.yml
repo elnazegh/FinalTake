@@ -39,4 +39,4 @@ jobs:
       - name: Run backend tests
         run: |
           echo "Running tests for ${BUILD_VERSION}"
-          python -m unittest discover -p "test_*.py" -v
+          python -m unittest discover -s . -p "test_*.py" -v
