@@ -2,6 +2,7 @@ const searchForm = document.querySelector(".hero-search");
 const searchInput = document.getElementById("media-search");
 const searchResultsSection = document.getElementById("search-results");
 const searchResultsGrid = document.getElementById("search-results-grid");
+const genreFilter = document.getElementById("genre-filter");
 
 function renderSearchResults(results) {
     searchResultsGrid.innerHTML = "";
@@ -48,13 +49,22 @@ if (searchForm && searchInput) {
         event.preventDefault();
 
         const query = searchInput.value.trim();
+        const genre = genreFilter.value;
 
         if (!query) {
             return;
         }
 
+        const params = new URLSearchParams({
+            query: query
+        });
+
+        if (genre) {
+            params.append("genre", genre);
+        }
+
         const url =
-            `http://127.0.0.1:5000/api/search?query=${encodeURIComponent(query)}`;
+            `http://127.0.0.1:5000/api/search?${params.toString()}`;
 
         try {
             const response = await fetch(url);
