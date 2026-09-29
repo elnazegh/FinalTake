@@ -100,6 +100,7 @@ def health_check():
 def search():
     query = request.args.get("query", "").strip()
     genre = request.args.get("genre", "").strip()
+    media_type = request.args.get("media_type", "").strip()
 
     if not query:
         return jsonify({
@@ -108,6 +109,7 @@ def search():
 
     normalized_query = query.casefold()
     normalized_genre = genre.casefold()
+    normalized_media_type = media_type.casefold()
 
     results = [
         media
@@ -116,6 +118,10 @@ def search():
         and (
             not normalized_genre
             or media["genre"].casefold() == normalized_genre
+        )
+        and (
+            not normalized_media_type
+            or media["type"].casefold() == normalized_media_type
         )
     ]
 
