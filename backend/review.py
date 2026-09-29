@@ -6,11 +6,9 @@ class Review:
         self.media_id = media_id
         self.rating = rating
         self.text = None
-
         self.set_text(text)
 
     def set_text(self, text):
-        """Set the review text."""
         if not isinstance(text, str):
             raise ValueError("Review must be text.")
 
@@ -26,5 +24,8 @@ class Review:
 
         self.text = text
 
-    def __str__(self):
-        return self.text
+    def edit_review(self, new_text):
+        self.set_text(new_text)
+
+    def delete_review(self):
+        self.text = None
