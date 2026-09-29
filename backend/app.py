@@ -1,5 +1,6 @@
 from flask import Flask, jsonify, request
 from database import get_db_connection
+from werkzeug.security import generate_password_hash
 
 
 app = Flask(__name__)
@@ -118,9 +119,70 @@ def search():
 
 @app.route("/api/auth/register", methods=["POST"])
 def register():
+    data = request.get_json()
+
+    if not data:
+        return jsonify({
+            "error": "Request body is required"
+        }), 400
+
+    username = data.get("username")
+    email = data.get("email")
+    password = data.get("password")
+
+    if not username:
+        return jsonify({
+            "error": "Username is required"
+        }), 400
+
+    if not email:
+        return jsonify({
+            "error": "Email is required"
+        }), 400
+
+    if not password:
+        return jsonify({
+            "error": "Password is required"
+        }), 400
+
+    hashed_password = generate_password_hash(
+            password,  
+            method="pbkdf2:sha256"
+        )
+
+    connection = get_db_connection()
+    cursor = connection.cursor()
+
+    try:
+        cursor.execute(
+            """
+            INSERT INTO users (username, email, password)
+            VALUES (%s, %s, %s)
+            """,
+            (username, email, hashed_password)
+        )
+
+        connection.commit()
+
+    except Exception as e:
+        connection.rollback()
+
+        if "Duplicate entry" in str(e):
+            return jsonify({
+                "error": "Username or email already exists"
+            }), 409
+
+        return jsonify({
+            "error": "Registration failed"
+        }), 500
+
+    finally:
+        cursor.close()
+        connection.close()
+
     return jsonify({
-        "message": "Registration endpoint - not implemented yet"
-    }), 501
+        "message": "User registered successfully"
+    }), 201
 
 
 @app.route("/api/auth/login", methods=["POST"])
