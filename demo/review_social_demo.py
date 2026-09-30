@@ -1,5 +1,6 @@
 from backend.rating import Rating
 from backend.review import Review
+from backend.favorite import Favorites
 
 
 # Mock data until the database/backend is available
@@ -9,6 +10,7 @@ mock_media_title = "Interstellar"
 
 review = None
 rating = Rating(mock_user_id, mock_media_id)
+favorites = Favorites(mock_user_id)
 
 
 while True:
@@ -26,7 +28,10 @@ while True:
     print("4. View Review")
     print("5. Edit Review")
     print("6. Delete Review")
-    print("7. Exit")
+    print("7. Add to Favorites")
+    print("8. Remove from Favorites")
+    print("9. View Favorite Status")
+    print("10. Exit")
 
     choice = input("\nChoose an option: ")
 
@@ -125,6 +130,36 @@ while True:
                 print(f"Error: {error}")
 
     elif choice == "7":
+        if favorites.add_favorite(mock_media_id):
+            print(
+                f"{mock_media_title} added to Favorites."
+            )
+        else:
+            print(
+                f"{mock_media_title} is already in Favorites."
+            )
+
+    elif choice == "8":
+        if favorites.remove_favorite(mock_media_id):
+            print(
+                f"{mock_media_title} removed from Favorites."
+            )
+        else:
+            print(
+                f"{mock_media_title} is not currently in Favorites."
+            )
+
+    elif choice == "9":
+        if favorites.is_favorited(mock_media_id):
+            print(
+                f"{mock_media_title} is in your Favorites."
+            )
+        else:
+            print(
+                f"{mock_media_title} is not in your Favorites."
+            )
+
+    elif choice == "10":
         print("Exiting FinalTake test.")
         break
 
