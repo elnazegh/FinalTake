@@ -51,9 +51,15 @@ class TestReviewEditingAndDeletion(unittest.TestCase):
             text="Original review"
         )
 
-        review.edit_review("Updated review")
+        review.edit_review(
+            user_id=1,
+            new_text="Updated review"
+        )
 
-        self.assertEqual(review.text, "Updated review")
+        self.assertEqual(
+            review.text,
+            "Updated review"
+        )
 
     def test_edit_review_preserves_associations(self):
         review = Review(
@@ -63,7 +69,10 @@ class TestReviewEditingAndDeletion(unittest.TestCase):
             text="Original review"
         )
 
-        review.edit_review("Updated review")
+        review.edit_review(
+            user_id=1,
+            new_text="Updated review"
+        )
 
         self.assertEqual(review.user_id, 1)
         self.assertEqual(review.media_id, 101)
@@ -78,7 +87,10 @@ class TestReviewEditingAndDeletion(unittest.TestCase):
         )
 
         with self.assertRaises(ValueError):
-            review.edit_review("")
+            review.edit_review(
+                user_id=1,
+                new_text=""
+            )
 
     def test_edit_review_cannot_exceed_5000_characters(self):
         review = Review(
@@ -89,7 +101,10 @@ class TestReviewEditingAndDeletion(unittest.TestCase):
         )
 
         with self.assertRaises(ValueError):
-            review.edit_review("a" * 5001)
+            review.edit_review(
+                user_id=1,
+                new_text="a" * 5001
+            )
 
     def test_delete_review(self):
         review = Review(
@@ -99,7 +114,7 @@ class TestReviewEditingAndDeletion(unittest.TestCase):
             text="Review to delete"
         )
 
-        review.delete_review()
+        review.delete_review(user_id=1)
 
         self.assertIsNone(review.text)
 
@@ -129,9 +144,77 @@ class TestReviewDisplay(unittest.TestCase):
             text="Great movie."
         )
 
-        review.delete_review()
+        review.delete_review(user_id=1)
 
         self.assertIsNone(review.to_dict())
+
+
+class TestReviewOwnership(unittest.TestCase):
+
+    def test_owner_can_edit_review(self):
+        review = Review(
+            user_id=1,
+            media_id=101,
+            rating=4.5,
+            text="Original review"
+        )
+
+        review.edit_review(
+            user_id=1,
+            new_text="Updated by owner"
+        )
+
+        self.assertEqual(
+            review.text,
+            "Updated by owner"
+        )
+
+    def test_non_owner_cannot_edit_review(self):
+        review = Review(
+            user_id=1,
+            media_id=101,
+            rating=4.5,
+            text="Original review"
+        )
+
+        with self.assertRaises(PermissionError):
+            review.edit_review(
+                user_id=2,
+                new_text="Unauthorized edit"
+            )
+
+        self.assertEqual(
+            review.text,
+            "Original review"
+        )
+
+    def test_owner_can_delete_review(self):
+        review = Review(
+            user_id=1,
+            media_id=101,
+            rating=4.5,
+            text="Review to delete"
+        )
+
+        review.delete_review(user_id=1)
+
+        self.assertIsNone(review.text)
+
+    def test_non_owner_cannot_delete_review(self):
+        review = Review(
+            user_id=1,
+            media_id=101,
+            rating=4.5,
+            text="Original review"
+        )
+
+        with self.assertRaises(PermissionError):
+            review.delete_review(user_id=2)
+
+        self.assertEqual(
+            review.text,
+            "Original review"
+        )
 
 
 if __name__ == "__main__":

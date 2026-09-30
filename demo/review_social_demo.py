@@ -102,22 +102,30 @@ while True:
             new_text = input("Enter your updated review: ")
 
             try:
-                review.edit_review(new_text)
+                review.edit_review(
+                    mock_user_id,
+                    new_text
+                )
+
                 print("Review updated successfully!")
 
-            except ValueError as error:
+            except (ValueError, PermissionError) as error:
                 print(f"Error: {error}")
 
     elif choice == "6":
         if review is None:
             print("You have no review to delete.")
         else:
-            review.delete_review()
-            review = None
-            print("Review deleted.")
+            try:
+                review.delete_review(mock_user_id)
+                review = None
+                print("Review deleted.")
+
+            except PermissionError as error:
+                print(f"Error: {error}")
 
     elif choice == "7":
-        print("Exiting FinalTake tests.")
+        print("Exiting FinalTake test.")
         break
 
     else:
