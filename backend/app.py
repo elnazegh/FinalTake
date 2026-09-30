@@ -1,6 +1,7 @@
 from flask import Flask, jsonify, request
 from database import get_db_connection
 from werkzeug.security import generate_password_hash
+import re
 
 
 app = Flask(__name__)
@@ -145,6 +146,13 @@ def register():
             "error": "Password is required"
         }), 400
 
+    email_pattern = r"^[^@\s]+@[^@\s]+\.[^@\s]+$"
+
+    if not re.match(email_pattern, email):
+        return jsonify({
+            "error": "Invalid email format"
+        }), 400
+
     hashed_password = generate_password_hash(
             password,  
             method="pbkdf2:sha256"
@@ -156,7 +164,7 @@ def register():
     try:
         cursor.execute(
             """
-            INSERT INTO users (username, email, password)
+            INSERT INTO users (username, email, password_hash)
             VALUES (%s, %s, %s)
             """,
             (username, email, hashed_password)
