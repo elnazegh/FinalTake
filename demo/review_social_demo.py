@@ -117,7 +117,7 @@ while True:
             print("Review deleted.")
 
     elif choice == "7":
-        print("Exiting FinalTake test.")
+        print("Exiting FinalTake tests.")
         break
 
     else:
