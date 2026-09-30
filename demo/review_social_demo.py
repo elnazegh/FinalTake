@@ -82,10 +82,17 @@ while True:
         if review is None:
             print("You have not written a review yet.")
         else:
-            print("\n--- Your Review ---")
-            print(f"Media: {mock_media_title}")
-            print(f"Rating: {review.rating}/5.0")
-            print(f"Review: {review.text}")
+            review_data = review.to_dict()
+
+            if review_data is None:
+                print("You have not written a review yet.")
+            else:
+                print("\n--- Your Review ---")
+                print(f"Media: {mock_media_title}")
+                print(f"User ID: {review_data['user_id']}")
+                print(f"Media ID: {review_data['media_id']}")
+                print(f"Rating: {review_data['rating']}/5.0")
+                print(f"Review: {review_data['text']}")
 
     elif choice == "5":
         if review is None:
