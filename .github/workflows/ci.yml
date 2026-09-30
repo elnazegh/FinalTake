@@ -40,3 +40,20 @@ jobs:
         run: |
           echo "Running tests for ${BUILD_VERSION}"
           python -m unittest discover -s . -p "test_*.py" -v
+      
+      - name: Package application
+        run: |
+          cd ..
+          zip -r "${BUILD_VERSION}.zip" \
+            backend \
+            frontend \
+            README.md \
+            -x "backend/venv/*" \
+            -x "backend/__pycache__/*" \
+            -x "*.DS_Store"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.BUILD_VERSION }}
+          path: ${{ env.BUILD_VERSION }}.zip
