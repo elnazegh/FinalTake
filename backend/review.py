@@ -29,3 +29,14 @@ class Review:
 
     def delete_review(self):
         self.text = None
+
+    def to_dict(self):
+        if self.text is None:
+            return None
+
+        return {
+            "user_id": self.user_id,
+            "media_id": self.media_id,
+            "rating": self.rating,
+            "text": self.text
+        }
