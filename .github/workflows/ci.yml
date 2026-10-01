@@ -37,9 +37,20 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Run backend tests
+        working-directory: backend
         run: |
-          echo "Running tests for ${BUILD_VERSION}"
+          echo "Running backend tests for ${BUILD_VERSION}"
           python -m unittest discover -s . -p "test_*.py" -v
+
+      - name: Run repository tests
+        working-directory: .
+        run: |
+          if [ -d "tests" ]; then
+            echo "Running repository tests for ${BUILD_VERSION}"
+            python -m unittest discover -s tests -p "test_*.py" -v
+          else
+            echo "No repository-level tests directory yet."
+          fi
       
       - name: Package application
         run: |
