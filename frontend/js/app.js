@@ -80,10 +80,28 @@ if (searchForm && searchInput) {
 
         try {
             const response = await fetch(url);
+
+            if (!response.ok) {
+                throw new Error(
+                    `Search request failed with status ${response.status}`
+                );
+            }
+
             const data = await response.json();
 
+            if (!Array.isArray(data.results)) {
+                throw new Error("Search response did not contain valid results.");
+            }
+
             renderSearchResults(data.results);
+
         } catch (error) {
+            searchResultsGrid.innerHTML = "";
+            searchResultsGrid.textContent =
+                "Unable to load search results. Please try again.";
+
+            searchResultsSection.hidden = false;
+
             console.error("Search request failed:", error);
         }
     });
