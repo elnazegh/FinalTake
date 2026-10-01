@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Two-Factor Authentication - FinalTake</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+
+<body>
+
+  <header class="site-header">
+    <div class="logo">
+      <a href="../index.html">FinalTake</a>
+    </div>
+
+    <nav class="main-nav" aria-label="Main navigation">
+      <a href="../index.html">Home</a>
+      <a href="#">Movies</a>
+      <a href="#">TV Shows</a>
+      <a href="#">Books</a>
+      <a href="#">Games</a>
+    </nav>
+
+    <div class="header-actions">
+      <a href="login.html" class="login-link">Log In</a>
+      <a href="signup.html" class="signup-button">Sign Up</a>
+    </div>
+  </header>
+
+  <main class="auth-page">
+
+    <div class="auth-card">
+      <h2>Verify Your Account</h2>
+
+      <p>
+        Enter the verification code sent to your email to continue.
+      </p>
+
+      <form id="two-factor-form">
+
+        <label for="verification-code">Verification Code</label>
+
+        <input
+          type="text"
+          id="verification-code"
+          name="verification-code"
+          placeholder="Enter 6-digit code"
+          inputmode="numeric"
+          maxlength="6"
+          pattern="[0-9]{6}"
+          required
+        >
+
+        <button type="submit">Verify Code</button>
+
+      </form>
+
+      <div class="auth-links">
+        <p>
+          Didn't receive a code?
+          <a href="#">Resend Code</a>
+        </p>
+
+        <p>
+          <a href="login.html">Back to Login</a>
+        </p>
+      </div>
+
+    </div>
+
+  </main>
+
+  <footer>
+    <p>&copy; 2026 FinalTake</p>
+  </footer>
+
+</body>
+</html>
