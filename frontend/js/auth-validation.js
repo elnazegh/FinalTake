@@ -5,11 +5,18 @@ document.addEventListener("DOMContentLoaded", () => {
     signupForm.addEventListener("submit", (event) => {
       event.preventDefault();
 
+      const username = document.getElementById("username");
       const email = document.getElementById("email");
       const password = document.getElementById("password");
       const confirmPassword = document.getElementById("confirm-password");
       const terms = document.getElementById("terms");
 
+
+      if (!username.value.trim()) {
+  alert("Please enter a username.");
+  username.focus();
+  return;
+}
       if (!email.value.trim()) {
         alert("Please enter your email.");
         email.focus();
