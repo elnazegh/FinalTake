@@ -9,9 +9,28 @@ document.addEventListener("DOMContentLoaded", () => {
     signupForm.addEventListener("submit", async (event) => {
       event.preventDefault();
 
-      const username = document.getElementById("username").value.trim();
-      const email = document.getElementById("email").value.trim();
-      const password = document.getElementById("password").value;
+      const usernameElement = document.getElementById("username");
+      const emailElement = document.getElementById("email");
+      const passwordElement = document.getElementById("password");
+      const confirmPasswordElement =
+        document.getElementById("confirm-password");
+      const termsElement = document.getElementById("terms");
+
+      // Do not send API request if validation fails
+      if (
+        !usernameElement.value.trim() ||
+        !emailElement.value.trim() ||
+        !emailElement.checkValidity() ||
+        passwordElement.value.length < 8 ||
+        passwordElement.value !== confirmPasswordElement.value ||
+        !termsElement.checked
+      ) {
+        return;
+      }
+
+      const username = usernameElement.value.trim();
+      const email = emailElement.value.trim();
+      const password = passwordElement.value;
 
       try {
         const response = await fetch(`${API_BASE_URL}/register`, {
@@ -46,8 +65,20 @@ document.addEventListener("DOMContentLoaded", () => {
     loginForm.addEventListener("submit", async (event) => {
       event.preventDefault();
 
-      const email = document.getElementById("email").value.trim();
-      const password = document.getElementById("password").value;
+      const emailElement = document.getElementById("email");
+      const passwordElement = document.getElementById("password");
+
+      // Do not send API request if validation fails
+      if (
+        !emailElement.value.trim() ||
+        !emailElement.checkValidity() ||
+        !passwordElement.value.trim()
+      ) {
+        return;
+      }
+
+      const email = emailElement.value.trim();
+      const password = passwordElement.value;
 
       try {
         const response = await fetch(`${API_BASE_URL}/login`, {
