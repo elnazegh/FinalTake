@@ -25,6 +25,7 @@ media_items = [
         "id": "1",
         "title": "The Dark Knight",
         "type": "movie",
+        "genre": "Action",
         "imageUrl": None,
         "releaseYear": 2008
     },
@@ -32,6 +33,7 @@ media_items = [
         "id": "2",
         "title": "Dark",
         "type": "tv",
+        "genre": "Drama",
         "imageUrl": None,
         "releaseYear": 2017
     },
@@ -39,6 +41,7 @@ media_items = [
         "id": "3",
         "title": "Darkest Hour",
         "type": "movie",
+        "genre": "Drama",
         "imageUrl": None,
         "releaseYear": 2017
     },
@@ -46,6 +49,7 @@ media_items = [
         "id": "4",
         "title": "Dune",
         "type": "book",
+        "genre": "Science Fiction",
         "imageUrl": None,
         "releaseYear": 1965
     },
@@ -53,6 +57,7 @@ media_items = [
         "id": "5",
         "title": "Dark Souls",
         "type": "game",
+        "genre": "RPG",
         "imageUrl": None,
         "releaseYear": 2011
     }
@@ -105,6 +110,8 @@ def health_check():
 @app.route("/api/search", methods=["GET"])
 def search():
     query = request.args.get("query", "").strip()
+    genre = request.args.get("genre", "").strip()
+    media_type = request.args.get("media_type", "").strip()
 
     if not query:
         return jsonify({
@@ -112,11 +119,21 @@ def search():
         }), 200
 
     normalized_query = query.casefold()
+    normalized_genre = genre.casefold()
+    normalized_media_type = media_type.casefold()
 
     results = [
         media
         for media in media_items
         if normalized_query in media["title"].casefold()
+        and (
+            not normalized_genre
+            or media["genre"].casefold() == normalized_genre
+        )
+        and (
+            not normalized_media_type
+            or media["type"].casefold() == normalized_media_type
+        )
     ]
 
     return jsonify({

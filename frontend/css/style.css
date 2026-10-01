@@ -150,8 +150,8 @@ a {
   border: 1px solid #475569;
   border-right: 0;
   border-radius: 8px 0 0 8px;
-  background-color: #f8fafc;
-  color: #111827;
+  background-color: #ffffff;
+  color: #000000;
   font-size: 15px;
 }
 
@@ -615,7 +615,10 @@ input:focus-visible,
   outline-offset: 3px;
   box-shadow: 0 0 8px rgba(56, 189, 248, 0.8);
 }
-.hero-search input,
+.hero-search input {
+  color: #000000;
+}
+
 .auth-card input {
   color: #e0f2fe;
 }
