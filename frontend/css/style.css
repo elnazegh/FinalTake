@@ -627,3 +627,50 @@ input:focus-visible,
 .auth-card input::placeholder {
   color: #94a3b8;
 }
+
+/* Login page options */
+.login-options {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin: -4px 0 20px;
+}
+
+.remember-me {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: #cbd5e1;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.remember-me input {
+  width: auto;
+  margin: 0;
+  accent-color: #fbbf24;
+  cursor: pointer;
+}
+
+.forgot-password {
+  color: #fbbf24;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.forgot-password:hover {
+  color: #f59e0b;
+  text-decoration: underline;
+}
+
+@media (max-width: 480px) {
+  .login-options {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+  }
+}
