@@ -2,9 +2,23 @@ from flask import Flask, jsonify, request
 from database import get_db_connection
 from werkzeug.security import generate_password_hash
 import re
-
+from flask_cors import CORS
 
 app = Flask(__name__)
+
+CORS(
+    app,
+    resources={
+        r"/api/*": {
+            "origins": [
+                "http://127.0.0.1:5500",
+                "http://localhost:5500"
+            ],
+            "methods": ["GET", "POST", "OPTIONS"],
+            "allow_headers": ["Content-Type"]
+        }
+    }
+)
 
 media_items = [
     {
@@ -43,11 +57,6 @@ media_items = [
         "releaseYear": 2011
     }
 ]
-
-@app.after_request
-def add_cors_headers(response):
-    response.headers["Access-Control-Allow-Origin"] = "http://127.0.0.1:5500"
-    return response
 
 # --------------------------------------------------
 # Basic backend route
