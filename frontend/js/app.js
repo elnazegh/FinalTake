@@ -4,6 +4,7 @@ const searchResultsSection = document.getElementById("search-results");
 const searchResultsGrid = document.getElementById("search-results-grid");
 const genreFilter = document.getElementById("genre-filter");
 const mediaTypeFilter = document.getElementById("media-type-filter");
+const sortFilter = document.getElementById("sort-filter");
 
 function renderSearchResults(results) {
     searchResultsGrid.innerHTML = "";
@@ -52,6 +53,7 @@ if (searchForm && searchInput) {
         const query = searchInput.value.trim();
         const genre = genreFilter.value;
         const mediaType = mediaTypeFilter.value;
+        const sort = sortFilter.value;
 
         if (!query) {
             return;
@@ -67,6 +69,10 @@ if (searchForm && searchInput) {
 
         if (mediaType) {
             params.append("media_type", mediaType);
+        }
+
+        if (sort) {
+            params.append("sort", sort);
         }
 
         const url =

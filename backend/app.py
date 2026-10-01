@@ -165,6 +165,7 @@ def search():
     query = request.args.get("query", "").strip()
     genre = request.args.get("genre", "").strip()
     media_type = request.args.get("media_type", "").strip()
+    sort = request.args.get("sort", "").strip()
 
     if not query:
         return jsonify({
@@ -188,6 +189,28 @@ def search():
             or media["type"].casefold() == normalized_media_type
         )
     ]
+
+    if sort == "title_asc":
+        results.sort(
+            key=lambda media: media["title"].casefold()
+        )
+
+    elif sort == "title_desc":
+        results.sort(
+            key=lambda media: media["title"].casefold(),
+            reverse=True
+        )
+
+    elif sort == "year_desc":
+        results.sort(
+            key=lambda media: media["releaseYear"],
+            reverse=True
+        )
+
+    elif sort == "year_asc":
+        results.sort(
+            key=lambda media: media["releaseYear"]
+        )
 
     return jsonify({
         "results": results
