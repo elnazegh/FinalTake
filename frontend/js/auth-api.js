@@ -12,6 +12,11 @@ document.addEventListener("DOMContentLoaded", () => {
       const username = document.getElementById("username").value.trim();
       const email = document.getElementById("email").value.trim();
       const password = document.getElementById("password").value;
+      const submitButton = signupForm.querySelector('button[type="submit"]');
+
+      const originalText = submitButton.textContent;
+      submitButton.disabled = true;
+      submitButton.textContent = "Creating Account...";
 
       try {
         const response = await fetch(`${API_BASE_URL}/register`, {
@@ -29,14 +34,17 @@ document.addEventListener("DOMContentLoaded", () => {
         const data = await response.json();
 
         if (!response.ok) {
-          alert(data.error || "Registration failed.");
+          alert(data.error || data.message || "Registration failed.");
           return;
         }
 
         alert(data.message || "Account created successfully!");
       } catch (error) {
         console.error("Registration error:", error);
-        alert("Unable to connect to the server.");
+        alert("Unable to connect to the server. Please try again.");
+      } finally {
+        submitButton.disabled = false;
+        submitButton.textContent = originalText;
       }
     });
   }
@@ -48,6 +56,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const email = document.getElementById("email").value.trim();
       const password = document.getElementById("password").value;
+      const submitButton = loginForm.querySelector('button[type="submit"]');
+
+      const originalText = submitButton.textContent;
+      submitButton.disabled = true;
+      submitButton.textContent = "Logging In...";
 
       try {
         const response = await fetch(`${API_BASE_URL}/login`, {
@@ -71,7 +84,10 @@ document.addEventListener("DOMContentLoaded", () => {
         alert(data.message || "Login successful!");
       } catch (error) {
         console.error("Login error:", error);
-        alert("Unable to connect to the server.");
+        alert("Unable to connect to the server. Please try again.");
+      } finally {
+        submitButton.disabled = false;
+        submitButton.textContent = originalText;
       }
     });
   }
