@@ -627,3 +627,35 @@ input:focus-visible,
 .auth-card input::placeholder {
   color: #94a3b8;
 }
+
+/* Sign Up page options */
+.password-hint {
+  margin: -10px 0 18px;
+  color: #94a3b8;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.signup-options {
+  margin: -4px 0 20px;
+}
+
+.terms-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #cbd5e1;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.terms-option input {
+  width: auto;
+  margin: 0;
+  accent-color: #fbbf24;
+  cursor: pointer;
+}
+
+.terms-option span {
+  line-height: 1.4;
+}
