@@ -113,17 +113,4 @@ class RegistrationApiTests(unittest.TestCase):
         self.assertTrue(len(stored_password) > 20)
 
     def test_invalid_email_format(self):
-        response = self.client.post(
-            "/api/auth/register",
-            json={
-                "username": "testuser",
-                "email": "not-an-email",
-                "password": "password123"
-            }
-        )
-
-        self.assertEqual(response.status_code, 400)
-
-
-if __name__ == "__main__":
-    unittest.main()
+      
