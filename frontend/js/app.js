@@ -16,8 +16,10 @@ function renderSearchResults(results) {
     }
 
     results.forEach((media) => {
-        const card = document.createElement("article");
+        const card = document.createElement("a");
         card.className = "media-card";
+        card.href =
+            `pages/media-details.html?id=${encodeURIComponent(media.id)}`;
 
         const image = document.createElement("div");
         image.className = "card-image";
