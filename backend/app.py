@@ -1,5 +1,15 @@
 from flask import Flask, jsonify, request
-from database import get_db_connection
+
+# These imports support both running app.py directly
+# and importing backend.app from the automated tests.
+try:
+    from .database import get_db_connection
+    from .rating import Rating
+    from .review import Review
+except ImportError:
+    from database import get_db_connection
+    from rating import Rating
+    from review import Review
 
 
 app = Flask(__name__)
@@ -42,10 +52,45 @@ media_items = [
     }
 ]
 
+
+# Temporary in-memory review storage until
+# database review persistence is available.
+reviews = {}
+next_review_id = 1
+
+
+def get_media_by_id(media_id):
+    """Find a media item using the shared media data."""
+    media_id = str(media_id)
+
+    for media in media_items:
+        if media["id"] == media_id:
+            return media
+
+    return None
+
+
+def serialize_review(review_id, review):
+    """Convert a Review object into API response data."""
+    review_data = review.to_dict()
+
+    if review_data is None:
+        return None
+
+    media = get_media_by_id(review.media_id)
+
+    return {
+        "id": review_id,
+        **review_data,
+        "media_title": media["title"] if media else None
+    }
+
+
 @app.after_request
 def add_cors_headers(response):
     response.headers["Access-Control-Allow-Origin"] = "http://127.0.0.1:5500"
     return response
+
 
 # --------------------------------------------------
 # Basic backend route
@@ -87,6 +132,7 @@ def health_check():
             "error": str(error)
         }), 500
 
+
 # --------------------------------------------------
 # Search route
 # --------------------------------------------------
@@ -111,6 +157,191 @@ def search():
     return jsonify({
         "results": results
     }), 200
+
+
+# --------------------------------------------------
+# Review routes
+# --------------------------------------------------
+
+@app.route("/api/reviews", methods=["POST"])
+def create_review():
+    global next_review_id
+
+    data = request.get_json(silent=True) or {}
+
+    user_id = data.get("user_id")
+    media_id = data.get("media_id")
+    rating = data.get("rating")
+    text = data.get("text")
+
+    if (
+        user_id is None
+        or media_id is None
+        or rating is None
+        or text is None
+    ):
+        return jsonify({
+            "error": (
+                "user_id, media_id, rating, and text are required."
+            )
+        }), 400
+
+    media = get_media_by_id(media_id)
+
+    if media is None:
+        return jsonify({
+            "error": "Media item not found."
+        }), 404
+
+    if not Rating.is_valid_rating(rating):
+        return jsonify({
+            "error": (
+                "Rating must be between 0.5 and 5.0 "
+                "in half-star increments."
+            )
+        }), 400
+
+    try:
+        review = Review(
+            user_id=user_id,
+            media_id=str(media_id),
+            rating=float(rating),
+            text=text
+        )
+
+    except ValueError as error:
+        return jsonify({
+            "error": str(error)
+        }), 400
+
+    review_id = next_review_id
+    next_review_id += 1
+
+    reviews[review_id] = review
+
+    return jsonify({
+        "review": serialize_review(
+            review_id,
+            review
+        )
+    }), 201
+
+
+@app.route("/api/reviews", methods=["GET"])
+def get_reviews():
+    media_id = request.args.get("media_id")
+
+    results = []
+
+    for review_id, review in reviews.items():
+        if media_id is not None:
+            if str(review.media_id) != str(media_id):
+                continue
+
+        review_data = serialize_review(
+            review_id,
+            review
+        )
+
+        if review_data is not None:
+            results.append(review_data)
+
+    return jsonify({
+        "reviews": results
+    }), 200
+
+
+@app.route("/api/reviews/<int:review_id>", methods=["GET"])
+def get_review(review_id):
+    review = reviews.get(review_id)
+
+    if review is None:
+        return jsonify({
+            "error": "Review not found."
+        }), 404
+
+    return jsonify({
+        "review": serialize_review(
+            review_id,
+            review
+        )
+    }), 200
+
+
+@app.route("/api/reviews/<int:review_id>", methods=["PATCH"])
+def update_review(review_id):
+    review = reviews.get(review_id)
+
+    if review is None:
+        return jsonify({
+            "error": "Review not found."
+        }), 404
+
+    data = request.get_json(silent=True) or {}
+
+    user_id = data.get("user_id")
+    text = data.get("text")
+
+    if user_id is None or text is None:
+        return jsonify({
+            "error": "user_id and text are required."
+        }), 400
+
+    try:
+        review.edit_review(
+            user_id=user_id,
+            new_text=text
+        )
+
+    except PermissionError as error:
+        return jsonify({
+            "error": str(error)
+        }), 403
+
+    except ValueError as error:
+        return jsonify({
+            "error": str(error)
+        }), 400
+
+    return jsonify({
+        "review": serialize_review(
+            review_id,
+            review
+        )
+    }), 200
+
+
+@app.route("/api/reviews/<int:review_id>", methods=["DELETE"])
+def remove_review(review_id):
+    review = reviews.get(review_id)
+
+    if review is None:
+        return jsonify({
+            "error": "Review not found."
+        }), 404
+
+    data = request.get_json(silent=True) or {}
+    user_id = data.get("user_id")
+
+    if user_id is None:
+        return jsonify({
+            "error": "user_id is required."
+        }), 400
+
+    try:
+        review.delete_review(user_id)
+
+    except PermissionError as error:
+        return jsonify({
+            "error": str(error)
+        }), 403
+
+    del reviews[review_id]
+
+    return jsonify({
+        "message": "Review deleted."
+    }), 200
+
 
 # --------------------------------------------------
 # Future account routes
