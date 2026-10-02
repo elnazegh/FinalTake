@@ -7,10 +7,18 @@ import re
 # and importing backend.app from the automated tests.
 try:
     from .database import get_db_connection
+    from .media import create_media_record
+    from .media import get_media
+    from .media import list_media
+    from .media import validate_media_payload
     from .rating import Rating
     from .review import Review
 except ImportError:
     from database import get_db_connection
+    from media import create_media_record
+    from media import get_media
+    from media import list_media
+    from media import validate_media_payload
     from rating import Rating
     from review import Review
 
@@ -154,6 +162,91 @@ def health_check():
             "database": "disconnected",
             "error": str(error)
         }), 500
+
+
+# --------------------------------------------------
+# Media routes
+# --------------------------------------------------
+
+@app.route("/api/media", methods=["GET"])
+def get_media_catalog():
+    try:
+        connection = get_db_connection()
+
+        try:
+            media = list_media(connection)
+
+        finally:
+            connection.close()
+
+    except Exception:
+        return jsonify({
+            "error": "Unable to load media catalog."
+        }), 500
+
+    return jsonify({
+        "media": media
+    }), 200
+
+
+@app.route("/api/media/<int:media_id>", methods=["GET"])
+def get_media_details(media_id):
+    try:
+        connection = get_db_connection()
+
+        try:
+            media = get_media(connection, media_id)
+
+        finally:
+            connection.close()
+
+    except Exception:
+        return jsonify({
+            "error": "Unable to load media item."
+        }), 500
+
+    if media is None:
+        return jsonify({
+            "error": "Media item not found."
+        }), 404
+
+    return jsonify({
+        "media": media
+    }), 200
+
+
+@app.route("/api/media", methods=["POST"])
+def create_media():
+    data = request.get_json(silent=True) or {}
+
+    try:
+        media_data = validate_media_payload(data)
+
+    except ValueError as error:
+        return jsonify({
+            "error": str(error)
+        }), 400
+
+    try:
+        connection = get_db_connection()
+
+        try:
+            media = create_media_record(
+                connection,
+                media_data
+            )
+
+        finally:
+            connection.close()
+
+    except Exception:
+        return jsonify({
+            "error": "Unable to create media item."
+        }), 500
+
+    return jsonify({
+        "media": media
+    }), 201
 
 
 # --------------------------------------------------
