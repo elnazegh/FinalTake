@@ -38,6 +38,25 @@ class TestFrontendFiles(unittest.TestCase):
 
         self.assertIn("<form", content)
 
+    def test_homepage_contains_search_integration(self):
+        with open("frontend/index.html", "r", encoding="utf-8") as file:
+            content = file.read()
+
+        required_search_elements = [
+            'class="hero-search"',
+            'id="media-search"',
+            'id="genre-filter"',
+            'id="media-type-filter"',
+            'id="sort-filter"',
+            'id="search-results"',
+            'id="search-results-grid"',
+            'src="js/app.js"',
+        ]
+
+        for element in required_search_elements:
+            with self.subTest(element=element):
+                self.assertIn(element, content)
+
 
 if __name__ == "__main__":
     unittest.main()
