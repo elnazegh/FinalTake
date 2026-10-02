@@ -9,6 +9,8 @@ document.addEventListener("DOMContentLoaded", () => {
     signupForm.addEventListener("submit", async (event) => {
       event.preventDefault();
 
+      const submitButton = signupForm.querySelector('button[type="submit"]');
+
       const usernameElement = document.getElementById("username");
       const emailElement = document.getElementById("email");
       const passwordElement = document.getElementById("password");
@@ -32,6 +34,11 @@ document.addEventListener("DOMContentLoaded", () => {
       const email = emailElement.value.trim();
       const password = passwordElement.value;
 
+      // User feedback while request is processing
+      const originalText = submitButton.textContent;
+      submitButton.disabled = true;
+      submitButton.textContent = "Creating Account...";
+
       try {
         const response = await fetch(`${API_BASE_URL}/register`, {
           method: "POST",
@@ -48,14 +55,17 @@ document.addEventListener("DOMContentLoaded", () => {
         const data = await response.json();
 
         if (!response.ok) {
-          alert(data.error || "Registration failed.");
+          alert(data.error || data.message || "Registration failed.");
           return;
         }
 
         alert(data.message || "Account created successfully!");
       } catch (error) {
         console.error("Registration error:", error);
-        alert("Unable to connect to the server.");
+        alert("Unable to connect to the server. Please try again.");
+      } finally {
+        submitButton.disabled = false;
+        submitButton.textContent = originalText;
       }
     });
   }
@@ -64,6 +74,8 @@ document.addEventListener("DOMContentLoaded", () => {
   if (loginForm) {
     loginForm.addEventListener("submit", async (event) => {
       event.preventDefault();
+
+      const submitButton = loginForm.querySelector('button[type="submit"]');
 
       const emailElement = document.getElementById("email");
       const passwordElement = document.getElementById("password");
@@ -79,6 +91,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const email = emailElement.value.trim();
       const password = passwordElement.value;
+
+      // User feedback while request is processing
+      const originalText = submitButton.textContent;
+      submitButton.disabled = true;
+      submitButton.textContent = "Logging In...";
 
       try {
         const response = await fetch(`${API_BASE_URL}/login`, {
@@ -102,7 +119,10 @@ document.addEventListener("DOMContentLoaded", () => {
         alert(data.message || "Login successful!");
       } catch (error) {
         console.error("Login error:", error);
-        alert("Unable to connect to the server.");
+        alert("Unable to connect to the server. Please try again.");
+      } finally {
+        submitButton.disabled = false;
+        submitButton.textContent = originalText;
       }
     });
   }
