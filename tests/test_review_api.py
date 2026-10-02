@@ -1,6 +1,13 @@
 import unittest
+from unittest.mock import MagicMock, patch
 
 from backend import app as app_module
+
+
+CATALOG = {
+    1: {"id": "1", "title": "The Dark Knight"},
+    2: {"id": "2", "title": "Dark"}
+}
 
 
 class ReviewApiTests(unittest.TestCase):
@@ -11,6 +18,23 @@ class ReviewApiTests(unittest.TestCase):
 
         app_module.reviews.clear()
         app_module.next_review_id = 1
+
+        connection_patcher = patch("backend.app.get_db_connection")
+        self.mock_get_db_connection = connection_patcher.start()
+        self.addCleanup(connection_patcher.stop)
+
+        self.connection = MagicMock()
+        self.mock_get_db_connection.return_value = self.connection
+
+        media_patcher = patch("backend.app.get_media")
+        mock_get_media = media_patcher.start()
+        self.addCleanup(media_patcher.stop)
+
+        mock_get_media.side_effect = (
+            lambda connection, media_id: CATALOG.get(
+                int(media_id)
+            )
+        )
 
     def create_review(
         self,
@@ -308,6 +332,68 @@ class ReviewApiTests(unittest.TestCase):
             response.status_code,
             200
         )
+
+    def test_create_review_returns_500_when_catalog_unavailable(self):
+        self.mock_get_db_connection.side_effect = Exception("down")
+
+        response = self.create_review()
+
+        self.assertEqual(
+            response.status_code,
+            500
+        )
+
+        self.assertEqual(
+            len(app_module.reviews),
+            0
+        )
+
+    def test_get_reviews_returns_500_when_catalog_unavailable(self):
+        self.create_review()
+
+        self.mock_get_db_connection.side_effect = Exception("down")
+
+        response = self.client.get(
+            "/api/reviews"
+        )
+
+        self.assertEqual(
+            response.status_code,
+            500
+        )
+
+    def test_review_with_non_numeric_media_id_is_not_found(self):
+        response = self.create_review(
+            media_id="abc"
+        )
+
+        self.assertEqual(
+            response.status_code,
+            404
+        )
+
+    def test_review_media_id_is_stored_in_canonical_form(self):
+        response = self.create_review(
+            media_id="01"
+        )
+
+        self.assertEqual(
+            response.status_code,
+            201
+        )
+
+        self.assertEqual(
+            response.get_json()["review"]["media_id"],
+            "1"
+        )
+
+    def test_get_reviews_closes_catalog_connection(self):
+        self.create_review()
+        self.connection.close.reset_mock()
+
+        self.client.get("/api/reviews")
+
+        self.connection.close.assert_called_once()
 
 
 if __name__ == "__main__":
