@@ -9,10 +9,8 @@ document.addEventListener("DOMContentLoaded", () => {
     signupForm.addEventListener("submit", async (event) => {
       event.preventDefault();
 
-      
       const submitButton = signupForm.querySelector('button[type="submit"]');
 
-      
       const usernameElement = document.getElementById("username");
       const emailElement = document.getElementById("email");
       const passwordElement = document.getElementById("password");
@@ -36,6 +34,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const email = emailElement.value.trim();
       const password = passwordElement.value;
 
+      // User feedback while request is processing
       const originalText = submitButton.textContent;
       submitButton.disabled = true;
       submitButton.textContent = "Creating Account...";
@@ -76,11 +75,8 @@ document.addEventListener("DOMContentLoaded", () => {
     loginForm.addEventListener("submit", async (event) => {
       event.preventDefault();
 
-      const email = document.getElementById("email").value.trim();
-      const password = document.getElementById("password").value;
       const submitButton = loginForm.querySelector('button[type="submit"]');
 
-  
       const emailElement = document.getElementById("email");
       const passwordElement = document.getElementById("password");
 
@@ -96,7 +92,8 @@ document.addEventListener("DOMContentLoaded", () => {
       const email = emailElement.value.trim();
       const password = passwordElement.value;
 
-          const originalText = submitButton.textContent;
+      // User feedback while request is processing
+      const originalText = submitButton.textContent;
       submitButton.disabled = true;
       submitButton.textContent = "Logging In...";
 
