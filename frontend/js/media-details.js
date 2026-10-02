@@ -1,3 +1,8 @@
+const API_BASE_URL =
+    window.location.hostname === "127.0.0.1" ||
+    window.location.hostname === "localhost"
+        ? `${window.location.protocol}//${window.location.hostname}:5000`
+        : window.location.origin;
 const params = new URLSearchParams(window.location.search);
 const mediaId = params.get("id");
 const detailsContainer = document.getElementById("media-details");
@@ -31,7 +36,7 @@ async function loadMediaDetails() {
 
     try {
         const response = await fetch(
-            `http://127.0.0.1:5000/api/media/${encodeURIComponent(mediaId)}`
+            `${API_BASE_URL}/api/media/${encodeURIComponent(mediaId)}`
         );
 
         if (!response.ok) {
