@@ -1,3 +1,8 @@
+const API_BASE_URL =
+    window.location.hostname === "127.0.0.1" ||
+    window.location.hostname === "localhost"
+        ? `${window.location.protocol}//${window.location.hostname}:5000`
+        : window.location.origin;
 const searchForm = document.querySelector(".hero-search");
 const searchInput = document.getElementById("media-search");
 const searchResultsSection = document.getElementById("search-results");
@@ -16,8 +21,10 @@ function renderSearchResults(results) {
     }
 
     results.forEach((media) => {
-        const card = document.createElement("article");
+        const card = document.createElement("a");
         card.className = "media-card";
+        card.href =
+            `pages/media-details.html?id=${encodeURIComponent(media.id)}`;
 
         const image = document.createElement("div");
         image.className = "card-image";
@@ -76,7 +83,7 @@ if (searchForm && searchInput) {
         }
 
         const url =
-            `http://127.0.0.1:5000/api/search?${params.toString()}`;
+            `${API_BASE_URL}/api/search?${params.toString()}`;
 
         try {
             const response = await fetch(url);

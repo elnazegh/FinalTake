@@ -216,6 +216,17 @@ def search():
         "results": results
     }), 200
 
+@app.route("/api/media/<int:media_id>", methods=["GET"])
+def get_media_details(media_id):
+    media = get_media_by_id(media_id)
+
+    if media is None:
+        return jsonify({
+            "error": "Media not found."
+        }), 404
+
+    return jsonify(media), 200
+
 
 # --------------------------------------------------
 # Review routes
