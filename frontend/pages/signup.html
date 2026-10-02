@@ -9,24 +9,24 @@
 
 <body>
 
- <header class="site-header">
-  <div class="logo">
-    <a href="../index.html">FinalTake</a>
-  </div>
+  <header class="site-header">
+    <div class="logo">
+      <a href="../index.html">FinalTake</a>
+    </div>
 
-  <nav class="main-nav" aria-label="Main navigation">
-    <a href="../index.html">Home</a>
-    <a href="#">Movies</a>
-    <a href="#">TV Shows</a>
-    <a href="#">Books</a>
-    <a href="#">Games</a>
-  </nav>
+    <nav class="main-nav" aria-label="Main navigation">
+      <a href="../index.html">Home</a>
+      <a href="#">Movies</a>
+      <a href="#">TV Shows</a>
+      <a href="#">Books</a>
+      <a href="#">Games</a>
+    </nav>
 
-  <div class="header-actions">
-    <a href="login.html" class="login-link">Log In</a>
-    <a href="signup.html" class="signup-button">Sign Up</a>
-  </div>
-</header>
+    <div class="header-actions">
+      <a href="login.html" class="login-link">Log In</a>
+      <a href="signup.html" class="signup-button">Sign Up</a>
+    </div>
+  </header>
 
   <main class="auth-page">
 
@@ -34,12 +34,15 @@
       <h2>Create Account</h2>
       <p>Join FinalTake and start sharing your opinions.</p>
 
-    <form id="signup-form" novalidate>
+     <form id="signup-form" novalidate>
         <label for="username">Username</label>
         <input
           type="text"
           id="username"
+          name="username"
           placeholder="Choose a username"
+          autocomplete="username"
+          minlength="3"
           required
         >
 
@@ -47,7 +50,9 @@
         <input
           type="email"
           id="email"
+          name="email"
           placeholder="Enter your email"
+          autocomplete="email"
           required
         >
 
@@ -55,25 +60,43 @@
         <input
           type="password"
           id="password"
+          name="password"
           placeholder="Create a password"
+          autocomplete="new-password"
+          minlength="8"
           required
         >
+
+        <p class="password-hint">
+          Password must be at least 8 characters.
+        </p>
 
         <label for="confirm-password">Confirm Password</label>
         <input
           type="password"
           id="confirm-password"
+          name="confirm-password"
           placeholder="Confirm your password"
+          autocomplete="new-password"
+          minlength="8"
           required
         >
 
+        <div class="signup-options">
+          <label class="terms-option">
+            <input type="checkbox" id="terms" required>
+            <span>I agree to the Terms and Privacy Policy</span>
+          </label>
+        </div>
+
         <button type="submit">Create Account</button>
+
       </form>
 
       <div class="auth-links">
         <p>
           Already have an account?
-          <a href="login.html">Login</a>
+          <a href="login.html">Log In</a>
         </p>
       </div>
     </div>
@@ -83,6 +106,9 @@
   <footer>
     <p>&copy; 2026 FinalTake</p>
   </footer>
+  <script src="../js/auth-api.js"></script>
+
+  <script src="../js/auth-validation.js"></script>
 
   <script src="../js/signup.js"></script>
   <script src="../js/auth-api.js"></script>

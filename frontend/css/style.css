@@ -150,8 +150,8 @@ a {
   border: 1px solid #475569;
   border-right: 0;
   border-radius: 8px 0 0 8px;
-  background-color: #f8fafc;
-  color: #111827;
+  background-color: #ffffff;
+  color: #000000;
   font-size: 15px;
 }
 
@@ -615,7 +615,10 @@ input:focus-visible,
   outline-offset: 3px;
   box-shadow: 0 0 8px rgba(56, 189, 248, 0.8);
 }
-.hero-search input,
+.hero-search input {
+  color: #000000;
+}
+
 .auth-card input {
   color: #e0f2fe;
 }
@@ -623,4 +626,82 @@ input:focus-visible,
 .hero-search input::placeholder,
 .auth-card input::placeholder {
   color: #94a3b8;
+}
+
+/* Login page options */
+.login-options {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin: -4px 0 20px;
+}
+
+.remember-me {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: #cbd5e1;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.remember-me input {
+  width: auto;
+  margin: 0;
+  accent-color: #fbbf24;
+  cursor: pointer;
+}
+
+.forgot-password {
+  color: #fbbf24;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.forgot-password:hover {
+  color: #f59e0b;
+  text-decoration: underline;
+}
+
+@media (max-width: 480px) {
+  .login-options {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+  }
+}
+/* Sign Up page options */
+.password-hint {
+  margin: -10px 0 18px;
+  color: #94a3b8;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.signup-options {
+  margin: -4px 0 20px;
+}
+
+.terms-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #cbd5e1;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.terms-option input {
+  width: auto;
+  margin: 0;
+  accent-color: #fbbf24;
+  cursor: pointer;
+}
+
+.terms-option span {
+  line-height: 1.4;
 }

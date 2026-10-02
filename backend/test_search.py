@@ -95,6 +95,123 @@ class SearchApiTests(unittest.TestCase):
         self.assertIn("imageUrl", result)
         self.assertIn("releaseYear", result)
 
+    def test_search_filters_by_genre(self):
+        response = self.client.get(
+            "/api/search",
+            query_string={
+                "query": "dark",
+                "genre": "Drama"
+            }
+        )
+
+        self.assertEqual(response.status_code, 200)
+
+        results = response.get_json()["results"]
+        titles = [item["title"] for item in results]
+
+        self.assertEqual(
+            titles,
+            ["Dark", "Darkest Hour"]
+        )
+
+        for item in results:
+            self.assertEqual(item["genre"], "Drama")
+
+    def test_search_filters_by_media_type(self):
+        response = self.client.get(
+            "/api/search",
+            query_string={
+                "query": "dark",
+                "media_type": "movie"
+            }
+        )
+
+        self.assertEqual(response.status_code, 200)
+
+        results = response.get_json()["results"]
+        titles = [item["title"] for item in results]
+
+        self.assertEqual(
+            titles,
+            ["The Dark Knight", "Darkest Hour"]
+        )
+
+        for item in results:
+            self.assertEqual(item["type"], "movie")
+
+    def test_search_combines_genre_and_media_type(self):
+        response = self.client.get(
+            "/api/search",
+            query_string={
+                "query": "dark",
+                "genre": "Drama",
+                "media_type": "movie"
+            }
+        )
+
+        self.assertEqual(response.status_code, 200)
+
+        results = response.get_json()["results"]
+
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0]["title"], "Darkest Hour")
+        self.assertEqual(results[0]["genre"], "Drama")
+        self.assertEqual(results[0]["type"], "movie")
+
+    def test_search_combined_filters_no_match(self):
+        response = self.client.get(
+            "/api/search",
+            query_string={
+                "query": "dark",
+                "genre": "RPG",
+                "media_type": "movie"
+            }
+        )
+
+        self.assertEqual(response.status_code, 200)
+
+        results = response.get_json()["results"]
+
+        self.assertEqual(results, [])
+
+    def test_search_sorts_title_ascending(self):
+        response = self.client.get(
+            "/api/search",
+            query_string={
+                "query": "dark",
+                "sort": "title_asc"
+            }
+        )
+
+        self.assertEqual(response.status_code, 200)
+
+        results = response.get_json()["results"]
+        titles = [item["title"] for item in results]
+
+        self.assertEqual(
+            titles,
+            sorted(titles, key=str.casefold)
+        )
+
+    def test_search_sorts_year_newest_first(self):
+        response = self.client.get(
+            "/api/search",
+            query_string={
+                "query": "dark",
+                "sort": "year_desc"
+            }
+        )
+
+        self.assertEqual(response.status_code, 200)
+
+        results = response.get_json()["results"]
+        years = [item["releaseYear"] for item in results]
+
+        self.assertEqual(
+            years,
+            sorted(years, reverse=True)
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

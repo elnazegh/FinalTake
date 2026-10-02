@@ -68,3 +68,26 @@ jobs:
         with:
           name: ${{ env.BUILD_VERSION }}
           path: ${{ env.BUILD_VERSION }}.zip
+
+
+ # Frontend/UX CI validation - Sprint 2
+  frontend-validation:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+
+ # Validate required frontend files
+      - name: Validate frontend files
+        run: |
+          echo "Validating FinalTake frontend..."
+
+          test -f frontend/index.html
+          test -f frontend/pages/login.html
+          test -f frontend/pages/signup.html
+          test -f frontend/css/style.css
+          test -f frontend/js/app.js
+
+          echo "Frontend validation passed."
