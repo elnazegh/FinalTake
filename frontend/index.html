@@ -54,6 +54,42 @@
             placeholder="Search movies, shows, books, or games..."
           >
 
+          <label for="genre-filter" class="sr-only">
+            Filter by genre
+          </label>
+
+          <select id="genre-filter">
+            <option value="">All Genres</option>
+            <option value="Action">Action</option>
+            <option value="Drama">Drama</option>
+            <option value="Science Fiction">Science Fiction</option>
+            <option value="RPG">RPG</option>
+          </select>
+
+          <label for="media-type-filter" class="sr-only">
+            Filter by media type
+          </label>
+
+          <select id="media-type-filter">
+            <option value="">All Media Types</option>
+            <option value="movie">Movies</option>
+            <option value="tv">TV Shows</option>
+            <option value="book">Books</option>
+            <option value="game">Games</option>
+          </select>
+
+          <label for="sort-filter" class="sr-only">
+            Sort search results
+          </label>
+
+          <select id="sort-filter">
+            <option value="">Default</option>
+            <option value="title_asc">Title: A-Z</option>
+            <option value="title_desc">Title: Z-A</option>
+            <option value="year_desc">Release Year: Newest First</option>
+            <option value="year_asc">Release Year: Oldest First</option>
+          </select>
+
           <button type="submit">Search</button>
         </form>
 
@@ -69,6 +105,17 @@
       </div>
     </section>
 
+    <!-- SEARCH RESULTS SECTION -->
+    <section class="trending" id="search-results" hidden>
+      <div class="section-heading">
+        <div>
+          <p class="section-label">Search</p>
+          <h2>Search Results</h2>
+        </div>
+      </div>
+
+      <div class="media-grid" id="search-results-grid"></div>
+    </section>
 
     <!-- TRENDING SECTION -->
     <section class="trending" id="trending">

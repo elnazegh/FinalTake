@@ -45,8 +45,4 @@ if (signupForm) {
             }
 
         } catch (error) {
-            console.error("Registration request failed:", error);
-            alert("Unable to connect to the server.");
-        }
-    });
-}
+            console.error("Registration request fai
