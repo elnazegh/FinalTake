@@ -37,7 +37,9 @@ while True:
     print("8. Remove from Favorites")
     print("9. View Favorite Status")
     print("10. Add Comment")
-    print("11. Exit")
+    print("11. Edit Comment")
+    print("12. Delete Comment")
+    print("13. Exit")
 
     choice = input("\nChoose an option: ")
 
@@ -84,9 +86,8 @@ while True:
                     review_text
                 )
 
-                # A new review replaces the current review.
-                # Comments attached to the old review should
-                # no longer remain in the demo.
+                # Replacing the review removes comments
+                # associated with the previous review.
                 if active_review_id is not None:
                     comments = [
                         comment
@@ -124,7 +125,10 @@ while True:
                 review_comments = [
                     comment
                     for comment in comments
-                    if comment.review_id == active_review_id
+                    if (
+                        comment.review_id == active_review_id
+                        and comment.to_dict() is not None
+                    )
                 ]
 
                 print("\n--- Comments ---")
@@ -151,6 +155,7 @@ while True:
 
         else:
             print(f"\nCurrent Review: {review.text}")
+
             new_text = input(
                 "Enter your updated review: "
             )
@@ -174,7 +179,8 @@ while True:
             try:
                 review.delete_review(mock_user_id)
 
-                # Remove comments belonging to the deleted review.
+                # Remove comments belonging to
+                # the deleted review.
                 comments = [
                     comment
                     for comment in comments
@@ -245,6 +251,145 @@ while True:
                 print(f"Error: {error}")
 
     elif choice == "11":
+        if review is None or active_review_id is None:
+            print(
+                "You need a review before editing a comment."
+            )
+
+        else:
+            review_comments = [
+                comment
+                for comment in comments
+                if (
+                    comment.review_id == active_review_id
+                    and comment.to_dict() is not None
+                )
+            ]
+
+            if not review_comments:
+                print("There are no comments to edit.")
+
+            else:
+                print("\n--- Comments ---")
+
+                for index, comment in enumerate(
+                    review_comments,
+                    start=1
+                ):
+                    print(
+                        f"{index}. User {comment.user_id}: "
+                        f"{comment.text}"
+                    )
+
+                selection_input = input(
+                    "Choose the comment to edit: "
+                )
+
+                try:
+                    selection = int(selection_input)
+
+                except ValueError:
+                    print("Invalid comment selection.")
+                    continue
+
+                if (
+                    selection < 1
+                    or selection > len(review_comments)
+                ):
+                    print("Invalid comment selection.")
+                    continue
+
+                selected_comment = review_comments[
+                    selection - 1
+                ]
+
+                new_text = input(
+                    "Enter your updated comment: "
+                )
+
+                try:
+                    selected_comment.edit_comment(
+                        user_id=mock_user_id,
+                        new_text=new_text
+                    )
+
+                    print(
+                        "Comment updated successfully!"
+                    )
+
+                except (ValueError, PermissionError) as error:
+                    print(f"Error: {error}")
+
+    elif choice == "12":
+        if review is None or active_review_id is None:
+            print(
+                "You need a review before deleting a comment."
+            )
+
+        else:
+            review_comments = [
+                comment
+                for comment in comments
+                if (
+                    comment.review_id == active_review_id
+                    and comment.to_dict() is not None
+                )
+            ]
+
+            if not review_comments:
+                print("There are no comments to delete.")
+
+            else:
+                print("\n--- Comments ---")
+
+                for index, comment in enumerate(
+                    review_comments,
+                    start=1
+                ):
+                    print(
+                        f"{index}. User {comment.user_id}: "
+                        f"{comment.text}"
+                    )
+
+                selection_input = input(
+                    "Choose the comment to delete: "
+                )
+
+                try:
+                    selection = int(selection_input)
+
+                except ValueError:
+                    print("Invalid comment selection.")
+                    continue
+
+                if (
+                    selection < 1
+                    or selection > len(review_comments)
+                ):
+                    print("Invalid comment selection.")
+                    continue
+
+                selected_comment = review_comments[
+                    selection - 1
+                ]
+
+                try:
+                    selected_comment.delete_comment(
+                        user_id=mock_user_id
+                    )
+
+                    comments.remove(
+                        selected_comment
+                    )
+
+                    print(
+                        "Comment deleted successfully!"
+                    )
+
+                except (ValueError, PermissionError) as error:
+                    print(f"Error: {error}")
+
+    elif choice == "13":
         print("Exiting FinalTake test.")
         break
 
