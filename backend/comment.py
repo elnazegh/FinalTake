@@ -25,8 +25,41 @@ class Comment:
 
         self.text = text
 
+    def verify_owner(self, user_id):
+        """Verify that the supplied user owns this comment."""
+
+        if user_id != self.user_id:
+            raise PermissionError(
+                "Only the owner of this comment can modify it."
+            )
+
+    def edit_comment(self, user_id, new_text):
+        """Edit a comment if the user owns it."""
+
+        self.verify_owner(user_id)
+
+        if self.text is None:
+            raise ValueError("Cannot edit a deleted comment.")
+
+        self.set_text(new_text)
+
+    def delete_comment(self, user_id):
+        """Delete a comment if the user owns it."""
+
+        self.verify_owner(user_id)
+
+        if self.text is None:
+            raise ValueError(
+                "Comment has already been deleted."
+            )
+
+        self.text = None
+
     def to_dict(self):
         """Return comment data for display or later API use."""
+
+        if self.text is None:
+            return None
 
         return {
             "user_id": self.user_id,
