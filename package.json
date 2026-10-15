@@ -1,0 +1,26 @@
+{
+  "name": "finaltake",
+  "version": "1.0.0",
+  "description": "CPSC 491 Group 6 – FinalTake social entertainment web application",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/elnazegh/FinalTake.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/elnazegh/FinalTake/issues"
+  },
+  "homepage": "https://github.com/elnazegh/FinalTake#readme",
+  "devDependencies": {
+    "@playwright/test": "^1.64.0"
+  }
+}
