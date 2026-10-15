@@ -1,6 +1,22 @@
+import os
 import unittest
 
 import movie_review_crud as crud
+
+
+class TestLuisFilesFolder(unittest.TestCase):
+
+    def test_luis_files_folder_exists(self):
+        folder = os.path.dirname(os.path.abspath(__file__))
+
+        self.assertTrue(os.path.isdir(folder))
+        self.assertEqual(os.path.basename(folder), "luis-files")
+
+    def test_luis_files_contains_expected_files(self):
+        folder = os.path.dirname(os.path.abspath(__file__))
+
+        self.assertTrue(os.path.isfile(os.path.join(folder, "sprint_3_luis_test.py")))
+        self.assertTrue(os.path.isfile(os.path.join(folder, "movie_review_crud.py")))
 
 
 class TestMovieReviewCrud(unittest.TestCase):
