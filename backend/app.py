@@ -7,10 +7,22 @@ import re
 # and importing backend.app from the automated tests.
 try:
     from .database import get_db_connection
+    from .media import create_media_record
+    from .media import get_media
+    from .media import list_media
+    from .media import normalize_media_id
+    from .media import search_media
+    from .media import validate_media_payload
     from .rating import Rating
     from .review import Review
 except ImportError:
     from database import get_db_connection
+    from media import create_media_record
+    from media import get_media
+    from media import list_media
+    from media import normalize_media_id
+    from media import search_media
+    from media import validate_media_payload
     from rating import Rating
     from review import Review
 
@@ -38,80 +50,60 @@ CORS(
 )
 
 
-media_items = [
-    {
-        "id": "1",
-        "title": "The Dark Knight",
-        "type": "movie",
-        "genre": "Action",
-        "imageUrl": None,
-        "releaseYear": 2008
-    },
-    {
-        "id": "2",
-        "title": "Dark",
-        "type": "tv",
-        "genre": "Drama",
-        "imageUrl": None,
-        "releaseYear": 2017
-    },
-    {
-        "id": "3",
-        "title": "Darkest Hour",
-        "type": "movie",
-        "genre": "Drama",
-        "imageUrl": None,
-        "releaseYear": 2017
-    },
-    {
-        "id": "4",
-        "title": "Dune",
-        "type": "book",
-        "genre": "Science Fiction",
-        "imageUrl": None,
-        "releaseYear": 1965
-    },
-    {
-        "id": "5",
-        "title": "Dark Souls",
-        "type": "game",
-        "genre": "RPG",
-        "imageUrl": None,
-        "releaseYear": 2011
-    }
-]
-
-
 # Temporary in-memory review storage until
 # database review persistence is available.
 reviews = {}
 next_review_id = 1
 
 
-def get_media_by_id(media_id):
-    """Find a media item using the shared media data."""
-    media_id = str(media_id)
-
-    for media in media_items:
-        if media["id"] == media_id:
-            return media
-
-    return None
+class MediaLookupError(Exception):
+    """The media catalog could not be read from the database."""
 
 
-def serialize_review(review_id, review):
+@app.errorhandler(MediaLookupError)
+def handle_media_lookup_error(error):
+    return jsonify({
+        "error": "Unable to load media catalog."
+    }), 500
+
+
+def load_media_titles(media_ids):
+    """Map media id strings to titles using the database catalog."""
+    titles = {}
+
+    if not media_ids:
+        return titles
+
+    try:
+        connection = get_db_connection()
+
+        try:
+            for media_id in set(media_ids):
+                media = get_media(connection, media_id)
+
+                if media is not None:
+                    titles[str(media_id)] = media["title"]
+
+        finally:
+            connection.close()
+
+    except Exception as error:
+        raise MediaLookupError() from error
+
+    return titles
+
+
+def serialize_review(review_id, review, media_titles):
     """Convert a Review object into API response data."""
     review_data = review.to_dict()
 
     if review_data is None:
         return None
 
-    media = get_media_by_id(review.media_id)
-
     return {
         "id": review_id,
         **review_data,
-        "media_title": media["title"] if media else None
+        "media_title": media_titles.get(str(review.media_id))
     }
 
 
@@ -157,6 +149,90 @@ def health_check():
 
 
 # --------------------------------------------------
+# Media routes
+# --------------------------------------------------
+
+@app.route("/api/media", methods=["GET"])
+def get_media_catalog():
+    try:
+        connection = get_db_connection()
+
+        try:
+            media = list_media(connection)
+
+        finally:
+            connection.close()
+
+    except Exception:
+        return jsonify({
+            "error": "Unable to load media catalog."
+        }), 500
+
+    return jsonify({
+        "media": media
+    }), 200
+
+
+@app.route("/api/media/<int:media_id>", methods=["GET"])
+def get_media_details(media_id):
+    try:
+        connection = get_db_connection()
+
+        try:
+            media = get_media(connection, media_id)
+
+        finally:
+            connection.close()
+
+    except Exception:
+        return jsonify({
+            "error": "Unable to load media item."
+        }), 500
+
+    if media is None:
+        return jsonify({
+            "error": "Media not found."
+        }), 404
+
+    # The frontend reads the media object directly, not wrapped.
+    return jsonify(media), 200
+
+
+@app.route("/api/media", methods=["POST"])
+def create_media():
+    data = request.get_json(silent=True)
+
+    try:
+        media_data = validate_media_payload(data)
+
+    except ValueError as error:
+        return jsonify({
+            "error": str(error)
+        }), 400
+
+    try:
+        connection = get_db_connection()
+
+        try:
+            media = create_media_record(
+                connection,
+                media_data
+            )
+
+        finally:
+            connection.close()
+
+    except Exception:
+        return jsonify({
+            "error": "Unable to create media item."
+        }), 500
+
+    return jsonify({
+        "media": media
+    }), 201
+
+
+# --------------------------------------------------
 # Search route
 # --------------------------------------------------
 
@@ -172,60 +248,29 @@ def search():
             "results": []
         }), 200
 
-    normalized_query = query.casefold()
-    normalized_genre = genre.casefold()
-    normalized_media_type = media_type.casefold()
+    try:
+        connection = get_db_connection()
 
-    results = [
-        media
-        for media in media_items
-        if normalized_query in media["title"].casefold()
-        and (
-            not normalized_genre
-            or media["genre"].casefold() == normalized_genre
-        )
-        and (
-            not normalized_media_type
-            or media["type"].casefold() == normalized_media_type
-        )
-    ]
+        try:
+            results = search_media(
+                connection,
+                query,
+                genre,
+                media_type,
+                sort
+            )
 
-    if sort == "title_asc":
-        results.sort(
-            key=lambda media: media["title"].casefold()
-        )
+        finally:
+            connection.close()
 
-    elif sort == "title_desc":
-        results.sort(
-            key=lambda media: media["title"].casefold(),
-            reverse=True
-        )
-
-    elif sort == "year_desc":
-        results.sort(
-            key=lambda media: media["releaseYear"],
-            reverse=True
-        )
-
-    elif sort == "year_asc":
-        results.sort(
-            key=lambda media: media["releaseYear"]
-        )
+    except Exception:
+        return jsonify({
+            "error": "Unable to search media catalog."
+        }), 500
 
     return jsonify({
         "results": results
     }), 200
-
-@app.route("/api/media/<int:media_id>", methods=["GET"])
-def get_media_details(media_id):
-    media = get_media_by_id(media_id)
-
-    if media is None:
-        return jsonify({
-            "error": "Media not found."
-        }), 404
-
-    return jsonify(media), 200
 
 
 # --------------------------------------------------
@@ -255,9 +300,14 @@ def create_review():
             )
         }), 400
 
-    media = get_media_by_id(media_id)
+    media_id = normalize_media_id(media_id)
+    media_titles = (
+        load_media_titles([media_id])
+        if media_id is not None
+        else {}
+    )
 
-    if media is None:
+    if str(media_id) not in media_titles:
         return jsonify({
             "error": "Media item not found."
         }), 404
@@ -291,7 +341,8 @@ def create_review():
     return jsonify({
         "review": serialize_review(
             review_id,
-            review
+            review,
+            media_titles
         )
     }), 201
 
@@ -300,16 +351,23 @@ def create_review():
 def get_reviews():
     media_id = request.args.get("media_id")
 
+    selected = [
+        (review_id, review)
+        for review_id, review in reviews.items()
+        if media_id is None or str(review.media_id) == str(media_id)
+    ]
+
+    media_titles = load_media_titles(
+        [review.media_id for _, review in selected]
+    )
+
     results = []
 
-    for review_id, review in reviews.items():
-        if media_id is not None:
-            if str(review.media_id) != str(media_id):
-                continue
-
+    for review_id, review in selected:
         review_data = serialize_review(
             review_id,
-            review
+            review,
+            media_titles
         )
 
         if review_data is not None:
@@ -329,10 +387,13 @@ def get_review(review_id):
             "error": "Review not found."
         }), 404
 
+    media_titles = load_media_titles([review.media_id])
+
     return jsonify({
         "review": serialize_review(
             review_id,
-            review
+            review,
+            media_titles
         )
     }), 200
 
@@ -345,6 +406,8 @@ def update_review(review_id):
         return jsonify({
             "error": "Review not found."
         }), 404
+
+    media_titles = load_media_titles([review.media_id])
 
     data = request.get_json(silent=True) or {}
 
@@ -375,7 +438,8 @@ def update_review(review_id):
     return jsonify({
         "review": serialize_review(
             review_id,
-            review
+            review,
+            media_titles
         )
     }), 200
 
