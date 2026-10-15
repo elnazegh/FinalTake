@@ -32,6 +32,12 @@ class Review:
 
     def edit_review(self, user_id, new_text):
         self.verify_owner(user_id)
+
+        if self.text is None:
+            raise ValueError(
+                "Cannot edit a deleted review."
+            )
+
         self.set_text(new_text)
 
     def delete_review(self, user_id):
