@@ -51,7 +51,12 @@ jobs:
           else
             echo "No repository-level tests directory yet."
           fi
-      
+
+      - name: Run luis-files tests
+        working-directory: .
+        run: python -m unittest discover -s luis-files -p "test_*.py" -v
+
+
       - name: Package application
         run: |
           cd ..
