@@ -25,32 +25,67 @@ const url = 'http://127.0.0.1:5500/frontend/pages/signup.html';
 
 });
 
-test('Rejects invalid email', async ({ page }) => {
+
+test('Rejects invalid email submission', async ({ page }) => {
   await page.goto(url);
+
+  // Monitor registration requests.
+  let registrationRequests = 0;
+
+  page.on('request', request => {
+    if (
+      request.method() === 'POST' &&
+      request.url().includes('/api/auth/register')
+    ) {
+      registrationRequests++;
+    }
+  });
 
   await page.getByPlaceholder('Choose a username').fill('TestUser123');
   await page.getByPlaceholder('Enter your email').fill('invalid-email');
   await page.getByPlaceholder('Create a password').fill('Password123!');
   await page.getByPlaceholder('Confirm your password').fill('Password123!');
 
-  const email = page.getByPlaceholder('Enter your email');
+  // Check the terms box so email is the only invalid field.
+  await page.locator('#terms').check();
 
-  // Check the browser's email validation.
-  const isValid = await email.evaluate(input => input.checkValidity());
+  await page.getByRole('button', { name: 'Create Account' }).click();
 
-  expect(isValid).toBe(false);
+  // The application should not submit invalid registration data.
+  expect(registrationRequests).toBe(0);
+
+  // The user remains on the signup page.
+  await expect(page.locator('#signup-form')).toBeVisible();
 });
 
-test('Detects mismatched passwords', async ({ page }) => {
+
+test('Rejects mismatched passwords submission', async ({ page }) => {
   await page.goto(url);
+
+  // Monitor registration requests.
+  let registrationRequests = 0;
+
+  page.on('request', request => {
+    if (
+      request.method() === 'POST' &&
+      request.url().includes('/api/auth/register')
+    ) {
+      registrationRequests++;
+    }
+  });
 
   await page.getByPlaceholder('Choose a username').fill('TestUser123');
   await page.getByPlaceholder('Enter your email').fill('test@example.com');
   await page.getByPlaceholder('Create a password').fill('Password123!');
   await page.getByPlaceholder('Confirm your password').fill('Different123!');
 
-  const password = await page.getByPlaceholder('Create a password').inputValue();
-  const confirmPassword = await page.getByPlaceholder('Confirm your password').inputValue();
+  await page.locator('#terms').check();
 
-  expect(password).not.toBe(confirmPassword);
+  await page.getByRole('button', { name: 'Create Account' }).click();
+
+  // Mismatched passwords must not trigger registration.
+  expect(registrationRequests).toBe(0);
+
+  await expect(page.locator('#signup-form')).toBeVisible();
 });
+
