@@ -45,12 +45,14 @@ jobs:
       - name: Run repository tests
         working-directory: .
         run: |
-          if [ -d "tests" ]; then
-            echo "Running repository tests for ${BUILD_VERSION}"
-            python -m unittest discover -s tests -p "test_*.py" -v
-          else
-            echo "No repository-level tests directory yet."
+          echo "Running repository tests for ${BUILD_VERSION}"
+
+          if [ ! -d "tests" ]; then
+            echo "::error::Repository test directory is missing."
+            exit 1
           fi
+
+          python -m unittest discover -s tests -p "test_*.py" -v
       
       - name: Package application
         run: |
