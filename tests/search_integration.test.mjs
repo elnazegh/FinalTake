@@ -40,7 +40,7 @@ function createElement() {
     };
 }
 
-test("search recovers after an HTTP 500 response", async () => {
+test("frontend search recovers after a mocked HTTP 500 response", async () => {
     const elements = {
         ".hero-search": createElement(),
         "media-search": createElement(),
@@ -118,6 +118,15 @@ test("search recovers after an HTTP 500 response", async () => {
     await form.submit(event);
 
     assert.equal(requests.length, 2);
+    // Verify both API requests include the correct search parameters.
+    for (const requestUrl of requests) {
+        const url = new URL(requestUrl);
+
+        assert.equal(url.pathname, "/api/search");
+        assert.equal(url.searchParams.get("query"), "dark");
+        assert.equal(url.searchParams.get("genre"), "Drama");
+        assert.equal(url.searchParams.get("media_type"), "movie");
+    }
     assert.equal(grid.children.length, 1);
     assert.equal(grid.textContent, "");
 

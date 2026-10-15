@@ -94,5 +94,8 @@ jobs:
         with:
           node-version: "22"
 
+      - name: Validate search JavaScript syntax
+        run: node --check frontend/js/app.js
+
       - name: Run frontend API recovery integration test
         run: node --test tests/search_integration.test.mjs
