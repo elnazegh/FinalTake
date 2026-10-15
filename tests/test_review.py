@@ -118,6 +118,24 @@ class TestReviewEditingAndDeletion(unittest.TestCase):
 
         self.assertIsNone(review.text)
 
+    def test_deleted_review_cannot_be_edited(self):
+        review = Review(
+            user_id=1,
+            media_id=101,
+            rating=4.5,
+            text="Review to delete"
+        )
+
+        review.delete_review(user_id=1)
+
+        with self.assertRaises(ValueError):
+            review.edit_review(
+                user_id=1,
+                new_text="Restored review"
+            )
+
+        self.assertIsNone(review.text)
+
 
 class TestReviewDisplay(unittest.TestCase):
 
