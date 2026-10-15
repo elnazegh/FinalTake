@@ -7,9 +7,33 @@ on:
   pull_request:
     branches: [main]
 
+
 jobs:
   backend-tests:
     runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: ci_root_only_password
+          MYSQL_DATABASE: finaltake_ci_test
+          MYSQL_USER: finaltake_ci
+          MYSQL_PASSWORD: ci_test_only_password
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=12
+
+    env:
+      RUN_MYSQL_INTEGRATION_TESTS: "1"
+      DB_HOST: "127.0.0.1"
+      DB_USER: "finaltake_ci"
+      DB_PASSWORD: "ci_test_only_password"
+      DB_NAME: "finaltake_ci_test"
 
     defaults:
       run:
@@ -69,8 +93,7 @@ jobs:
           name: ${{ env.BUILD_VERSION }}
           path: ${{ env.BUILD_VERSION }}.zip
 
-
- # Frontend/UX CI validation - Sprint 2
+  # Frontend/UX CI validation
   frontend-validation:
     runs-on: ubuntu-latest
 
@@ -78,8 +101,6 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-
- # Validate required frontend files
       - name: Validate frontend files
         run: |
           echo "Validating FinalTake frontend..."
@@ -99,3 +120,6 @@ jobs:
 
       - name: Validate search JavaScript syntax
         run: node --check frontend/js/app.js
+
+      - name: Run frontend API recovery integration test
+        run: node --test tests/search_integration.test.mjs
