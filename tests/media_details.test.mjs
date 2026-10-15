@@ -50,6 +50,12 @@ async function runMediaDetails(search, response) {
 
         fetch: async (url) => {
             requestedUrl = url;
+
+            // Simulate a network failure when an Error is provided.
+            if (response instanceof Error) {
+                throw response;
+            }
+
             return response;
         },
 
@@ -120,5 +126,27 @@ test("HTTP 500 displays a generic error message", async () => {
     assert.equal(
         result.container.textContent,
         "Unable to load media details."
+    );
+});
+
+test("network failure displays a generic error message", async () => {
+    const result = await runMediaDetails(
+        "?id=1",
+        new Error("Network unavailable")
+    );
+
+    assert.equal(
+        result.requestedUrl,
+        "http://127.0.0.1:5000/api/media/1"
+    );
+
+    assert.equal(
+        result.container.textContent,
+        "Unable to load media details."
+    );
+
+    assert.equal(
+        result.container.children.length,
+        0
     );
 });
