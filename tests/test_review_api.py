@@ -308,6 +308,39 @@ class ReviewApiTests(unittest.TestCase):
             response.status_code,
             200
         )
+    def test_review_matches_media_details_api(self):
+        # Create a review for The Dark Knight.
+        created = self.create_review(
+            media_id="1",
+            text="Sprint 3 integration test."
+        )
+
+        self.assertEqual(created.status_code, 201)
+
+        # Retrieve the media and its reviews separately.
+        media_response = self.client.get("/api/media/1")
+
+        reviews_response = self.client.get(
+            "/api/reviews",
+            query_string={"media_id": "1"}
+        )
+
+        # Verify both API requests succeed.
+        self.assertEqual(media_response.status_code, 200)
+        self.assertEqual(reviews_response.status_code, 200)
+
+        media = media_response.get_json()
+        reviews = reviews_response.get_json()["reviews"]
+
+        # Verify the review belongs to the selected media.
+        self.assertEqual(len(reviews), 1)
+        self.assertEqual(reviews[0]["media_id"], "1")
+
+        # Verify both APIs return the same media title.
+        self.assertEqual(
+            reviews[0]["media_title"],
+            media["title"]
+        )
 
 
 if __name__ == "__main__":
