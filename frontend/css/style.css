@@ -705,3 +705,38 @@ input:focus-visible,
 .terms-option span {
   line-height: 1.4;
 }
+
+/* Logout button */
+
+.logout-button {
+  background-color: transparent;
+  color: #fbbf24;
+  border: 1px solid #fbbf24;
+  border-radius: 8px;
+  padding: 9px 14px;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.25s ease;
+}
+
+.logout-button:hover {
+  background-color: rgba(251, 191, 36, 0.08);
+}
+
+.logout-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.logout-button[hidden],
+.header-actions [hidden] {
+  display: none;
+}
+
+@media (max-width: 600px) {
+  .logout-button {
+    font-size: 14px;
+    padding: 7px 9px;
+  }
+}
