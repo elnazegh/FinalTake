@@ -83,15 +83,17 @@ Mark a scenario complete only when the scenario itself has been verified, not me
 - **Coverage assessment:** Partial - checked
 - **Follow-up / owner:** Reuse backend tests; selectively recheck UI after integration changes [Search QA]
 
+
 #### ST-05 — Empty and whitespace-only query
 
-- [ ] **Execution:** Partial - local  ·  **Jira:** [FC4G6-677](https://finaltake-cpsc491.atlassian.net/browse/FC4G6-677)
-- **Requirement:** FR5 / input behavior to confirm
-- **Expected result:** Defined behavior is consistent and produces no unexpected failure
-- **Method:** Boundary / equivalence  ·  **When:** Sprint 3
-- **Existing evidence:** test_missing_query passes; test_whitespace_is_trimmed checks surrounding spaces, not whitespace-only; JS returns early for blank query
-- **Coverage assessment:** Partial - checked
-- **Follow-up / owner:** Confirm expected blank-query UI behavior; decide if focused assertion is justified [Search QA]
+- [ ] **Execution:** Partial - automated API verified locally; frontend pending  ·  **Jira:** [FC4G6-677](https://finaltake-cpsc491.atlassian.net/browse/FC4G6-677)
+- **Requirement:** FR5 / search input handling
+- **Expected result:** Backend returns HTTP 200 and `{"results": []}` for missing or whitespace-only queries; frontend blank-query behavior remains to be verified
+- **Method:** Automated API boundary / equivalence testing and manual frontend verification  ·  **When:** Sprint 3
+- **Existing evidence:** test_missing_query, test_whitespace_is_trimmed, and new test_whitespace_only_query passed locally; backend suite 21/21 and repository suite 54/54 passed
+- **Coverage assessment:** Partial - backend API covered; frontend behavior pending
+- **Follow-up / owner:** Verify frontend blank-query behavior during FC4G6-677; reuse the existing automated API tests without duplicating them [Search QA]
+
 
 #### ST-06 — Special-character or unusually long query
 

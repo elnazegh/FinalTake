@@ -4,6 +4,18 @@ from app import app
 
 class SearchApiTests(unittest.TestCase):
 
+    def test_whitespace_only_query(self):
+        response = self.client.get(
+            "/api/search",
+            query_string={"query": "   "}
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.get_json(),
+            {"results": []}
+        )
+
     def setUp(self):
         app.config["TESTING"] = True
         self.client = app.test_client()
