@@ -7,9 +7,33 @@ on:
   pull_request:
     branches: [main]
 
+
 jobs:
   backend-tests:
     runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: ci_root_only_password
+          MYSQL_DATABASE: finaltake_ci_test
+          MYSQL_USER: finaltake_ci
+          MYSQL_PASSWORD: ci_test_only_password
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=12
+
+    env:
+      RUN_MYSQL_INTEGRATION_TESTS: "1"
+      DB_HOST: "127.0.0.1"
+      DB_USER: "finaltake_ci"
+      DB_PASSWORD: "ci_test_only_password"
+      DB_NAME: "finaltake_ci_test"
 
     defaults:
       run:
