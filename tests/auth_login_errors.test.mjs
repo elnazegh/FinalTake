@@ -77,7 +77,7 @@ async function simulateLogin(fetchImplementation) {
     return { alerts, button, defaultPrevented };
 }
 
-test("HTTP 501 displays the backend login error", async () => {
+ test("HTTP 503 displays authentication service error", async () => {
     let request;
 
     const result = await simulateLogin(async (url, options) => {
@@ -89,9 +89,9 @@ test("HTTP 501 displays the backend login error", async () => {
 
         return {
             ok: false,
-            status: 501,
+            status: 503,
             json: async () => ({
-                message: "Login endpoint - not implemented yet"
+                error: "Authentication service unavailable"
             })
         };
     });
@@ -105,7 +105,44 @@ test("HTTP 501 displays the backend login error", async () => {
     assert.equal(request.body.email, "test678@example.com");
 
     assert.deepEqual(result.alerts, [
-        "Login endpoint - not implemented yet"
+        "Authentication service unavailable"
+    ]);
+
+    assert.equal(result.button.disabled, false);
+    assert.equal(result.button.textContent, "Login");
+    assert.equal(result.defaultPrevented, true);
+});
+
+test("HTTP 401 displays invalid credentials error", async () => {
+    let request;
+
+    const result = await simulateLogin(async (url, options) => {
+        request = {
+            url,
+            method: options.method,
+            body: JSON.parse(options.body)
+        };
+
+        return {
+            ok: false,
+            status: 401,
+            json: async () => ({
+                error: "Invalid credentials"
+            })
+        };
+    });
+
+    assert.equal(
+        request.url,
+        "http://127.0.0.1:5000/api/auth/login"
+    );
+
+    assert.equal(request.method, "POST");
+    assert.equal(request.body.email, "test678@example.com");
+    assert.equal(request.body.password, "TestPassword123");
+
+    assert.deepEqual(result.alerts, [
+        "Invalid credentials"
     ]);
 
     assert.equal(result.button.disabled, false);
