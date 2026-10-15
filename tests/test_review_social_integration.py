@@ -166,53 +166,7 @@ class TestReviewSocialPermissions(unittest.TestCase):
         )
 
 
-class TestReviewSocialUserAndMediaIsolation(unittest.TestCase):
-
-    def test_drafts_for_different_users_do_not_overwrite_each_other(self):
-        drafts = ReviewDrafts()
-
-        drafts.save_draft(
-            user_id=1,
-            media_id=101,
-            text="User 1 draft"
-        )
-        drafts.save_draft(
-            user_id=2,
-            media_id=101,
-            text="User 2 draft"
-        )
-
-        self.assertEqual(
-            drafts.get_draft(1, 101),
-            "User 1 draft"
-        )
-        self.assertEqual(
-            drafts.get_draft(2, 101),
-            "User 2 draft"
-        )
-
-    def test_drafts_for_different_media_do_not_overwrite_each_other(self):
-        drafts = ReviewDrafts()
-
-        drafts.save_draft(
-            user_id=1,
-            media_id=101,
-            text="Movie draft"
-        )
-        drafts.save_draft(
-            user_id=1,
-            media_id=202,
-            text="Book draft"
-        )
-
-        self.assertEqual(
-            drafts.get_draft(1, 101),
-            "Movie draft"
-        )
-        self.assertEqual(
-            drafts.get_draft(1, 202),
-            "Book draft"
-        )
+class TestReviewSocialMultiUserComments(unittest.TestCase):
 
     def test_multiple_users_can_comment_on_same_review_with_separate_ownership(self):
         review_id = 5001
@@ -222,6 +176,7 @@ class TestReviewSocialUserAndMediaIsolation(unittest.TestCase):
             review_id=review_id,
             text="Review author's comment"
         )
+
         other_user_comment = Comment(
             user_id=2,
             review_id=review_id,
@@ -243,14 +198,17 @@ class TestReviewSocialUserAndMediaIsolation(unittest.TestCase):
             owner_comment.review_id,
             review_id
         )
+
         self.assertEqual(
             other_user_comment.review_id,
             review_id
         )
+
         self.assertEqual(
             owner_comment.text,
             "Review author's comment"
         )
+
         self.assertEqual(
             other_user_comment.text,
             "Updated by its owner"
@@ -307,19 +265,23 @@ class TestReviewSocialFeatureInteractions(unittest.TestCase):
             self.comment.text,
             "Updated comment"
         )
+
         self.assertEqual(
             self.review.text,
             "Good movie."
         )
+
         self.assertEqual(
             self.rating.value,
             4.0
         )
+
         self.assertTrue(
             self.favorites.is_favorited(
                 self.media_id
             )
         )
+
         self.assertEqual(
             self.drafts.get_draft(
                 self.user_id,
@@ -336,19 +298,23 @@ class TestReviewSocialFeatureInteractions(unittest.TestCase):
         self.assertIsNone(
             self.comment.text
         )
+
         self.assertEqual(
             self.review.text,
             "Good movie."
         )
+
         self.assertEqual(
             self.rating.value,
             4.0
         )
+
         self.assertTrue(
             self.favorites.is_favorited(
                 self.media_id
             )
         )
+
         self.assertTrue(
             self.drafts.has_draft(
                 self.user_id,
@@ -366,18 +332,22 @@ class TestReviewSocialFeatureInteractions(unittest.TestCase):
                 self.media_id
             )
         )
+
         self.assertEqual(
             self.rating.value,
             4.0
         )
+
         self.assertEqual(
             self.review.text,
             "Good movie."
         )
+
         self.assertEqual(
             self.comment.text,
             "Initial comment"
         )
+
         self.assertEqual(
             self.drafts.get_draft(
                 self.user_id,
@@ -392,6 +362,7 @@ class TestReviewSocialFeatureInteractions(unittest.TestCase):
             media_id=self.media_id,
             text="Other user's draft"
         )
+
         self.drafts.save_draft(
             user_id=self.user_id,
             media_id=202,
@@ -419,12 +390,14 @@ class TestReviewSocialFeatureInteractions(unittest.TestCase):
             submitted_review.text,
             "Separate unfinished draft"
         )
+
         self.assertFalse(
             self.drafts.has_draft(
                 self.user_id,
                 self.media_id
             )
         )
+
         self.assertEqual(
             self.drafts.get_draft(
                 2,
@@ -432,6 +405,7 @@ class TestReviewSocialFeatureInteractions(unittest.TestCase):
             ),
             "Other user's draft"
         )
+
         self.assertEqual(
             self.drafts.get_draft(
                 self.user_id,
@@ -464,14 +438,17 @@ class TestReviewSocialFeatureInteractions(unittest.TestCase):
             ),
             invalid_text
         )
+
         self.assertEqual(
             self.review.text,
             "Good movie."
         )
+
         self.assertEqual(
             self.comment.text,
             "Initial comment"
         )
+
         self.assertTrue(
             self.favorites.is_favorited(
                 self.media_id
