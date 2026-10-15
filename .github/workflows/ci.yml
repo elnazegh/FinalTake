@@ -123,3 +123,6 @@ jobs:
 
       - name: Run frontend API recovery integration test
         run: node --test tests/search_integration.test.mjs
+
+      - name: Run media details regression tests
+        run: node --test tests/media_details.test.mjs
