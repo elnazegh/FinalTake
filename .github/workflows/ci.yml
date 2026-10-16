@@ -79,20 +79,11 @@ jobs:
             exit 1
           fi
 
-          python -m unittest discover -s tests -p "test_*.py" -v 2>&1 | tee "$RUNNER_TEMP/repository-tests.log"
+      - name: Run luis-files tests
+        working-directory: .
+        run: python -m unittest discover -s luis-files -p "test_*.py" -v
 
-      - name: Upload Python test logs
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: python-test-logs
-          path: |
-            ${{ runner.temp }}/backend-tests.log
-            ${{ runner.temp }}/repository-tests.log
-          if-no-files-found: warn
-          retention-days: 7
 
-      
       - name: Package application
         run: |
           cd ..
