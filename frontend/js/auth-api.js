@@ -100,6 +100,7 @@ document.addEventListener("DOMContentLoaded", () => {
       try {
         const response = await fetch(`${API_BASE_URL}/login`, {
           method: "POST",
+          credentials: "include",
           headers: {
             "Content-Type": "application/json"
           },
@@ -117,6 +118,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         alert(data.message || "Login successful!");
+        window.location.href = "../index.html";
       } catch (error) {
         console.error("Login error:", error);
         alert("Unable to connect to the server. Please try again.");

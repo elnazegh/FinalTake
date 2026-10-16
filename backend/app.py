@@ -48,8 +48,10 @@ CORS(
             ],
             "allow_headers": ["Content-Type"]
         }
-    }
+    },
+    supports_credentials=True
 )
+
 
 
 media_items = [
