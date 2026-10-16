@@ -53,7 +53,16 @@ Use a throwaway branch and PR; do not merge it.
 2. **Fail:** on the throwaway branch add a test such as `self.assertEqual(1, 2)` in `backend/`, push, and expect `backend-tests` and `CI status` red.
 3. **Recover:** revert the commit, push, and expect all three green again.
 
-Record the run URLs and results in the PR description. As of this document, the pass and fail runs have not been recorded.
+Record the run URLs and results in the PR description.
+
+### Verified results (2026-10-15)
+
+| Scenario | Result | Run |
+|---|---|---|
+| Pass: PR #46 | `frontend-validation`, `backend-tests` and `CI status` all passed | https://github.com/elnazegh/FinalTake/actions/runs/38830472936 |
+| Fail: throwaway draft PR #47 with `assertEqual(1, 2)` | `backend-tests` failed at "Run backend tests"; later backend steps were skipped; `CI status` failed; `frontend-validation` passed | https://github.com/elnazegh/FinalTake/actions/runs/38830560909 |
+
+PR #47 was closed without merging and its branch deleted. The recover step (revert and re-run green) was not repeated, since #46 already shows a green run.
 
 ### Recommended repository setting
 
