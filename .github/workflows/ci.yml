@@ -104,6 +104,20 @@ jobs:
             -x "backend/__pycache__/*" \
             -x "*.DS_Store"
 
+      - name: Validate build package
+        run: |
+          cd ..
+          python -m compileall -q backend
+
+          for required in backend/app.py backend/requirements.txt frontend/index.html README.md; do
+            if ! unzip -Z1 "${BUILD_VERSION}.zip" | grep -Fx -- "${required}" > /dev/null; then
+              echo "Build package is missing ${required}"
+              exit 1
+            fi
+          done
+
+          echo "Build package ${BUILD_VERSION}.zip validated."
+
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
@@ -144,24 +158,22 @@ jobs:
           node --test tests/search_integration.test.mjs 2>&1 | tee "$RUNNER_TEMP/search-tests.log"
 
       - name: Run media details regression tests
+        run: node --test tests/media_details.test.mjs
 
+  # Single required check: fails if any CI job failed, was cancelled, or was skipped.
+  ci-status:
+    name: CI status
+    runs-on: ubuntu-latest
+    needs: [backend-tests, frontend-validation]
+    if: always()
+
+    steps:
+      - name: Report job results
         run: |
-          set -o pipefail
-          node --test tests/media_details.test.mjs 2>&1 | tee "$RUNNER_TEMP/media-details-tests.log"
+          echo "backend-tests: ${{ needs.backend-tests.result }}"
+          echo "frontend-validation: ${{ needs.frontend-validation.result }}"
 
-      - name: Run authentication frontend regression tests
+      - name: Fail unless every job succeeded
         run: |
-          set -o pipefail
-          node --test tests/auth_login_errors.test.mjs 2>&1 | tee "$RUNNER_TEMP/auth-tests.log"
-
-      - name: Upload frontend test logs
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: frontend-test-logs
-          path: |
-            ${{ runner.temp }}/search-tests.log
-            ${{ runner.temp }}/media-details-tests.log
-            ${{ runner.temp }}/auth-tests.log
-          if-no-files-found: warn
-          retention-days: 7
+          test "${{ needs.backend-tests.result }}" = "success"
+          test "${{ needs.frontend-validation.result }}" = "success"
