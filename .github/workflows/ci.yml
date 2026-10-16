@@ -93,7 +93,7 @@ jobs:
           python -m compileall -q backend
 
           for required in backend/app.py backend/requirements.txt frontend/index.html README.md; do
-            if ! unzip -l "${BUILD_VERSION}.zip" | grep -qF "${required}"; then
+            if ! unzip -Z1 "${BUILD_VERSION}.zip" | grep -Fx -- "${required}" > /dev/null; then
               echo "Build package is missing ${required}"
               exit 1
             fi
