@@ -249,23 +249,27 @@ def get_media_details(media_id):
 @app.route("/api/reviews", methods=["POST"])
 def create_review():
     global next_review_id
+    current_user_id = session.get("user_id")
+
+    if current_user_id is None:
+        return jsonify({
+            "error": "Authentication required."
+        }), 401
 
     data = request.get_json(silent=True) or {}
 
-    user_id = data.get("user_id")
     media_id = data.get("media_id")
     rating = data.get("rating")
     text = data.get("text")
 
     if (
-        user_id is None
-        or media_id is None
+        media_id is None
         or rating is None
         or text is None
     ):
         return jsonify({
             "error": (
-                "user_id, media_id, rating, and text are required."
+                "media_id, rating, and text are required."
             )
         }), 400
 
@@ -286,7 +290,7 @@ def create_review():
 
     try:
         review = Review(
-            user_id=user_id,
+            user_id=current_user_id,
             media_id=str(media_id),
             rating=float(rating),
             text=text
@@ -353,6 +357,13 @@ def get_review(review_id):
 
 @app.route("/api/reviews/<int:review_id>", methods=["PATCH"])
 def update_review(review_id):
+    current_user_id = session.get("user_id")
+
+    if current_user_id is None:
+        return jsonify({
+            "error": "Authentication required."
+        }), 401
+
     review = reviews.get(review_id)
 
     if review is None:
@@ -362,17 +373,16 @@ def update_review(review_id):
 
     data = request.get_json(silent=True) or {}
 
-    user_id = data.get("user_id")
     text = data.get("text")
 
-    if user_id is None or text is None:
+    if text is None:
         return jsonify({
-            "error": "user_id and text are required."
+            "error": "text is required."
         }), 400
 
     try:
         review.edit_review(
-            user_id=user_id,
+            user_id=current_user_id,
             new_text=text
         )
 
@@ -396,6 +406,12 @@ def update_review(review_id):
 
 @app.route("/api/reviews/<int:review_id>", methods=["DELETE"])
 def remove_review(review_id):
+    current_user_id = session.get("user_id")
+
+    if current_user_id is None:
+        return jsonify({
+            "error": "Authentication required."
+        }), 401
     review = reviews.get(review_id)
 
     if review is None:
@@ -403,16 +419,8 @@ def remove_review(review_id):
             "error": "Review not found."
         }), 404
 
-    data = request.get_json(silent=True) or {}
-    user_id = data.get("user_id")
-
-    if user_id is None:
-        return jsonify({
-            "error": "user_id is required."
-        }), 400
-
     try:
-        review.delete_review(user_id)
+        review.delete_review(current_user_id)
 
     except PermissionError as error:
         return jsonify({
