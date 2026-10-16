@@ -740,3 +740,35 @@ input:focus-visible,
     padding: 7px 9px;
   }
 }
+
+/* Sprint 3 - Media Details */
+
+.media-image-container {
+  width: 100%;
+  max-width: 220px;
+  min-height: 160px;
+  margin: 16px 0;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  background-color: #24334a;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  overflow: hidden;
+}
+
+.media-details-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 320px;
+  object-fit: contain;
+}
+
+.media-description {
+  margin-top: 16px;
+  color: #cbd5e1;
+  line-height: 1.6;
+}
