@@ -126,3 +126,6 @@ jobs:
 
       - name: Run media details regression tests
         run: node --test tests/media_details.test.mjs
+
+      - name: Run authentication frontend regression tests
+        run: node --test tests/auth_login_errors.test.mjs
