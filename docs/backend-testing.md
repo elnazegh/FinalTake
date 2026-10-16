@@ -64,9 +64,8 @@ python -m coverage report -m
 
 ## CI notes for Sprint 4
 
-Current CI (`.github/workflows/ci.yml`) already runs the backend and `tests/` suites with `unittest` and starts a throwaway `mysql:8.0` service. It sets `DB_*` variables for a `finaltake_ci_test` database, but the tests in this guide read `TEST_DB_*`, so they skip in CI and CI stays green. To run them in CI:
+Current CI (`.github/workflows/ci.yml`) starts an ephemeral `mysql:8.0` service and sets both application `DB_*` variables and test-only `TEST_DB_*` variables. The isolated test fixture connects as the service's root user because it must create and drop random `finaltake_test_*` databases. `REQUIRE_DB_TESTS=1` makes missing configuration or an unavailable MySQL service fail CI instead of skipping the suites. The MySQL service and credentials exist only for the workflow job; they are not shared development credentials.
 
-1. Export `TEST_DB_HOST=127.0.0.1`, `TEST_DB_USER=root` and `TEST_DB_PASSWORD` (the service's root password; the fixture needs a user that can create and drop databases) and `REQUIRE_DB_TESTS=1` for the backend test step, so a missing DB fails the build instead of skipping.
-2. Optionally add `coverage` and a minimum-coverage gate.
+Coverage reporting and a minimum-coverage gate are not configured.
 
 CI dependencies: everything in `backend/requirements.txt` (`mysql-connector-python`, `Flask`, `python-dotenv`, `Werkzeug`), plus `coverage` if a gate is added.

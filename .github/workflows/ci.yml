@@ -34,6 +34,11 @@ jobs:
       DB_USER: "finaltake_ci"
       DB_PASSWORD: "ci_test_only_password"
       DB_NAME: "finaltake_ci_test"
+      TEST_DB_HOST: "127.0.0.1"
+      TEST_DB_USER: "root"
+      TEST_DB_PASSWORD: "ci_root_only_password"
+      TEST_DB_PORT: "3306"
+      REQUIRE_DB_TESTS: "1"
 
     defaults:
       run:
