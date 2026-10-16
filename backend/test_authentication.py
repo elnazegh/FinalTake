@@ -278,8 +278,8 @@ class AuthenticationApiTests(unittest.TestCase):
 
         self.assertEqual(session_response.status_code, 401)
         self.assertFalse(
-            session_response.get_json()["authenticated"]
-        )
+        session_response.get_json()["authenticated"]
+    )
 
 if __name__ == "__main__":
     unittest.main()
