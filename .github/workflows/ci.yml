@@ -63,18 +63,33 @@ jobs:
       - name: Run backend tests
         working-directory: backend
         run: |
+          set -o pipefail
           echo "Running backend tests for ${BUILD_VERSION}"
-          python -m unittest discover -s . -p "test_*.py" -v
+          python -m unittest discover -s . -p "test_*.py" -v 2>&1 | tee "$RUNNER_TEMP/backend-tests.log"
 
       - name: Run repository tests
         working-directory: .
         run: |
+          set -o pipefail
           if [ -d "tests" ]; then
             echo "Running repository tests for ${BUILD_VERSION}"
-            python -m unittest discover -s tests -p "test_*.py" -v
+            python -m unittest discover -s tests -p "test_*.py" -v 2>&1 | tee "$RUNNER_TEMP/repository-tests.log"
           else
-            echo "No repository-level tests directory yet."
+            echo "ERROR: Required tests directory is missing." | tee "$RUNNER_TEMP/repository-tests.log"
+            exit 1
           fi
+
+      - name: Upload Python test logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-test-logs
+          path: |
+            ${{ runner.temp }}/backend-tests.log
+            ${{ runner.temp }}/repository-tests.log
+          if-no-files-found: warn
+          retention-days: 7
+
       
       - name: Package application
         run: |
@@ -122,7 +137,22 @@ jobs:
         run: node --check frontend/js/app.js
 
       - name: Run frontend API recovery integration test
-        run: node --test tests/search_integration.test.mjs
+        run: |
+          set -o pipefail
+          node --test tests/search_integration.test.mjs 2>&1 | tee "$RUNNER_TEMP/search-tests.log"
 
       - name: Run media details regression tests
-        run: node --test tests/media_details.test.mjs
+        run: |
+          set -o pipefail
+          node --test tests/media_details.test.mjs 2>&1 | tee "$RUNNER_TEMP/media-details-tests.log"
+
+      - name: Upload frontend test logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-test-logs
+          path: |
+            ${{ runner.temp }}/search-tests.log
+            ${{ runner.temp }}/media-details-tests.log
+          if-no-files-found: warn
+          retention-days: 7
