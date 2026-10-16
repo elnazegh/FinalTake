@@ -91,6 +91,7 @@ test("HTTP 404 displays Media not found", async () => {
     );
 });
 
+
 test("HTTP 200 displays the correct media details", async () => {
     const result = await runMediaDetails("?id=1", {
         ok: true,
@@ -104,18 +105,22 @@ test("HTTP 200 displays the correct media details", async () => {
         })
     });
 
-    assert.equal(result.container.children.length, 4);
+    // Title, image container, type, genre, year, description.
+    assert.equal(result.container.children.length, 6);
 
     assert.deepEqual(
         result.container.children.map((element) => element.textContent),
         [
             "The Dark Knight",
+            "Image unavailable",
             "Type: movie",
             "Genre: Action",
-            "Release Year: 2008"
+            "Release Year: 2008",
+            "No description available."
         ]
     );
 });
+
 
 test("HTTP 500 displays a generic error message", async () => {
     const result = await runMediaDetails("?id=1", {

@@ -248,6 +248,38 @@ class AuthenticationApiTests(unittest.TestCase):
             401
         )
 
+    def test_complete_authentication_lifecycle(self):
+        # Step 1: Login with valid credentials
+        response, _ = self.login()
+
+        self.assertEqual(response.status_code, 200)
+
+        # Step 2: Verify authenticated session
+        session_response = self.client.get(
+            "/api/auth/session"
+        )
+
+        self.assertEqual(session_response.status_code, 200)
+        self.assertTrue(
+            session_response.get_json()["authenticated"]
+        )
+
+        # Step 3: Logout
+        logout_response = self.client.post(
+            "/api/auth/logout"
+        )
+
+        self.assertEqual(logout_response.status_code, 200)
+
+        # Step 4: Verify session is invalidated
+        session_response = self.client.get(
+           "/api/auth/session"
+        )
+
+        self.assertEqual(session_response.status_code, 401)
+        self.assertFalse(
+        session_response.get_json()["authenticated"]
+    )
 
 if __name__ == "__main__":
     unittest.main()

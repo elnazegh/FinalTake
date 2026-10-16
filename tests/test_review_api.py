@@ -6,11 +6,22 @@ from backend import app as app_module
 class ReviewApiTests(unittest.TestCase):
 
     def setUp(self):
-        app_module.app.config["TESTING"] = True
+        self.original_secret_key = app_module.app.config.get("SECRET_KEY")
+        app_module.app.config.update(
+            TESTING=True,
+            SECRET_KEY="review-tests-only-key"
+        )
+
         self.client = app_module.app.test_client()
 
         app_module.reviews.clear()
         app_module.next_review_id = 1
+
+        # Simulate an authenticated review owner.
+        with self.client.session_transaction() as sess:
+            sess["user_id"] = 1
+    def tearDown(self):
+        app_module.app.config["SECRET_KEY"] = self.original_secret_key
 
     def create_review(
         self,
@@ -222,11 +233,13 @@ class ReviewApiTests(unittest.TestCase):
 
     def test_non_owner_cannot_edit_review(self):
         created = self.create_review()
-
         review_id = (
             created
             .get_json()["review"]["id"]
         )
+
+        with self.client.session_transaction() as sess:
+            sess["user_id"] = 2
 
         response = self.client.patch(
             f"/api/reviews/{review_id}",
@@ -288,6 +301,9 @@ class ReviewApiTests(unittest.TestCase):
             .get_json()["review"]["id"]
         )
 
+        with self.client.session_transaction() as sess:
+            sess["user_id"] = 2
+
         response = self.client.delete(
             f"/api/reviews/{review_id}",
             json={
@@ -309,6 +325,183 @@ class ReviewApiTests(unittest.TestCase):
             200
         )
 
+    def test_review_matches_media_details_api(self):
+        # Create a review for The Dark Knight.
+        created = self.create_review(
+            media_id="1",
+            text="Sprint 3 integration test."
+        )
+
+        self.assertEqual(created.status_code, 201)
+
+        # Retrieve the media and its reviews separately.
+        media_response = self.client.get("/api/media/1")
+
+        reviews_response = self.client.get(
+            "/api/reviews",
+            query_string={"media_id": "1"}
+        )
+
+        # Verify both API requests succeed.
+        self.assertEqual(media_response.status_code, 200)
+        self.assertEqual(reviews_response.status_code, 200)
+
+        media = media_response.get_json()
+        reviews = reviews_response.get_json()["reviews"]
+
+        # Verify the review belongs to the selected media.
+        self.assertEqual(len(reviews), 1)
+        self.assertEqual(reviews[0]["media_id"], "1")
+
+        # Verify both APIs return the same media title.
+        self.assertEqual(
+            reviews[0]["media_title"],
+            media["title"]
+        )
+    def test_unauthenticated_cannot_create_review(self):
+        anonymous = app_module.app.test_client()
+
+        response = anonymous.post(
+            "/api/reviews",
+            json={
+                "user_id": 1,
+                "media_id": "1",
+                "rating": 4.5,
+                "text": "Unauthorized review."
+            }
+        )
+
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(len(app_module.reviews), 0)
+
+    def test_unauthenticated_cannot_edit_review(self):
+        created = self.create_review()
+        review_id = created.get_json()["review"]["id"]
+
+        anonymous = app_module.app.test_client()
+
+        response = anonymous.patch(
+            f"/api/reviews/{review_id}",
+            json={
+                "user_id": 1,
+                "text": "Unauthorized edit."
+            }
+        )
+
+        self.assertEqual(response.status_code, 401)
+
+        stored_review = self.client.get(
+            f"/api/reviews/{review_id}"
+        ).get_json()["review"]
+
+        self.assertEqual(
+            stored_review["text"],
+            "Great movie."
+        )
+
+    def test_unauthenticated_cannot_delete_review(self):
+        created = self.create_review()
+        review_id = created.get_json()["review"]["id"]
+
+        anonymous = app_module.app.test_client()
+
+        response = anonymous.delete(
+            f"/api/reviews/{review_id}",
+            json={"user_id": 1}
+        )
+
+        self.assertEqual(response.status_code, 401)
+
+        remaining = self.client.get(
+            f"/api/reviews/{review_id}"
+        )
+
+        self.assertEqual(remaining.status_code, 200)
+
+
+    def test_forged_user_id_does_not_change_review_owner(self):
+        response = self.client.post(
+            "/api/reviews",
+            json={
+                "user_id": 99,
+                "media_id": "1",
+                "rating": 4.5,
+                "text": "My review."
+            }
+        )
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(
+            response.get_json()["review"]["user_id"],
+            1
+        )
+
+    def test_non_owner_cannot_edit_using_forged_owner_id(self):
+        created = self.create_review()
+        review_id = created.get_json()["review"]["id"]
+
+        with self.client.session_transaction() as sess:
+            sess["user_id"] = 2
+
+        response = self.client.patch(
+            f"/api/reviews/{review_id}",
+            json={
+                "user_id": 1,
+                "text": "Forged edit."
+            }
+        )
+
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(
+            app_module.reviews[review_id].text,
+            "Great movie."
+        )
+
+    def test_non_owner_cannot_delete_using_forged_owner_id(self):
+        created = self.create_review()
+        review_id = created.get_json()["review"]["id"]
+
+        with self.client.session_transaction() as sess:
+            sess["user_id"] = 2
+
+        response = self.client.delete(
+            f"/api/reviews/{review_id}",
+            json={"user_id": 1}
+        )
+
+        self.assertEqual(response.status_code, 403)
+        self.assertIn(review_id, app_module.reviews)
+
+    def test_logged_out_user_cannot_modify_or_delete_review(self):
+        created = self.create_review()
+        review_id = created.get_json()["review"]["id"]
+
+        logout = self.client.post("/api/auth/logout")
+        self.assertEqual(logout.status_code, 200)
+
+        session_check = self.client.get("/api/auth/session")
+        self.assertEqual(session_check.status_code, 401)
+
+        edit = self.client.patch(
+            f"/api/reviews/{review_id}",
+            json={
+                "user_id": 1,
+                "text": "Edit after logout."
+            }
+        )
+
+        delete = self.client.delete(
+            f"/api/reviews/{review_id}",
+            json={"user_id": 1}
+        )
+
+        self.assertEqual(edit.status_code, 401)
+        self.assertEqual(delete.status_code, 401)
+        self.assertIn(review_id, app_module.reviews)
+        self.assertEqual(
+            app_module.reviews[review_id].text,
+            "Great movie."
+        )
 
 if __name__ == "__main__":
     unittest.main()

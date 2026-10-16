@@ -88,4 +88,3 @@ test('Rejects mismatched passwords submission', async ({ page }) => {
 
   await expect(page.locator('#signup-form')).toBeVisible();
 });
-
