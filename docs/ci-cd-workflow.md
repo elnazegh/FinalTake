@@ -1,6 +1,6 @@
 # CI/CD Workflow
 
-Workflow file: `.github/workflows/ci.yml` (name: **FinalTake CI**). Jira: FC4G6-286, 288, 289, 290, 291.
+Workflow file: `.github/workflows/ci.yml` (name: **FinalTake CI**). Jira: FC4G6-286, 288, 289, 290, 291. Staging deployment (FC4G6-370) is in `.github/workflows/staging.yml`.
 
 ## Triggers
 
@@ -63,7 +63,19 @@ Under Settings > Branches > branch protection for `main`, require the **CI statu
 
 Each run uploads `build-<run number>-<short sha>.zip` (backend, frontend, README) to the run's Artifacts section.
 
+## Automatic staging deployment (FC4G6-370)
+
+Workflow file: `.github/workflows/staging.yml` (name: **Deploy Staging**).
+
+- Triggers when **FinalTake CI** completes successfully for a push to `main`. Failed CI runs and pull request runs never deploy. It can also be started manually with `workflow_dispatch`.
+- Checks out the exact commit that passed CI and publishes `frontend/` to GitHub Pages under the `staging` environment. The deployment URL appears on the workflow run and in the repository's Environments list.
+- Only the static frontend is deployed. The Flask backend and MySQL are not hosted, so search, sign-up and login do not work on the staging site.
+
+One-time setup (repository admin): Settings > Pages > Build and deployment > Source: **GitHub Actions**. Until that is enabled the deploy job fails; CI itself is unaffected because staging is a separate workflow.
+
+Status: this workflow has not run yet. It starts working after it is merged to `main` and Pages is enabled.
+
 ## Not yet implemented
 
-- Automatic staging deployment (FC4G6-370) has no workflow or hosting target yet.
+- Hosting for the backend and database in staging.
 - Test coverage reporting and a coverage threshold.
