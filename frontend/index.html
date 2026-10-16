@@ -23,9 +23,18 @@
     </nav>
 
     <div class="header-actions">
-      <a href="pages/login.html" class="login-link">Log In</a>
-      <a href="pages/signup.html" class="signup-button">Sign Up</a>
-    </div>
+  <a href="pages/login.html" class="login-link" id="login-link">
+    Log In
+  </a>
+
+  <a href="pages/signup.html" class="signup-button" id="signup-link">
+    Sign Up
+  </a>
+
+  <button type="button" id="logout-button" class="logout-button" hidden>
+    Log Out
+  </button>
+</div>
   </header>
 
   <main>
@@ -252,7 +261,8 @@
   </footer>
 
 
-  <script src="js/app.js"></script>
+<script src="js/app.js"></script>
+<script src="js/logout.js"></script>
 
 </body>
 </html>

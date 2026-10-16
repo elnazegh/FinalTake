@@ -40,6 +40,11 @@ async function loadMediaDetails() {
         );
 
         if (!response.ok) {
+            if (response.status === 404) {
+                detailsContainer.textContent = "Media not found.";
+                return;
+            }
+
             throw new Error(
                 `Media request failed with status ${response.status}`
             );
