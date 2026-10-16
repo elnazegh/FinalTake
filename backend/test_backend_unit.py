@@ -57,8 +57,13 @@ class DatabaseConnectionTests(unittest.TestCase):
 class BaseAppTestCase(unittest.TestCase):
 
     def setUp(self):
+        original_secret_key = app.config.get("SECRET_KEY")
+        app.config["SECRET_KEY"] = "backend-unit-tests-only-key"
+        self.addCleanup(app.config.__setitem__, "SECRET_KEY", original_secret_key)
         app.config["TESTING"] = True
         self.client = app.test_client()
+        with self.client.session_transaction() as session:
+            session["user_id"] = 1
         app_module.reviews.clear()
         app_module.next_review_id = 1
 
@@ -239,7 +244,6 @@ class ReviewValidationTests(BaseAppTestCase):
 
     def post_review(self, **overrides):
         payload = {
-            "user_id": 1,
             "media_id": "1",
             "rating": 4.5,
             "text": "Great movie.",
@@ -249,10 +253,9 @@ class ReviewValidationTests(BaseAppTestCase):
         return self.client.post("/api/reviews", json=payload)
 
     def test_each_required_field_is_enforced(self):
-        for field in ("user_id", "media_id", "rating", "text"):
+        for field in ("media_id", "rating", "text"):
             with self.subTest(field=field):
                 payload = {
-                    "user_id": 1,
                     "media_id": "1",
                     "rating": 4.5,
                     "text": "Great movie.",
@@ -263,6 +266,15 @@ class ReviewValidationTests(BaseAppTestCase):
 
                 self.assertEqual(response.status_code, 400)
 
+        self.assertEqual(app_module.reviews, {})
+
+    def test_review_creation_requires_authenticated_session(self):
+        with self.client.session_transaction() as session:
+            session.clear()
+
+        response = self.post_review()
+
+        self.assertEqual(response.status_code, 401)
         self.assertEqual(app_module.reviews, {})
 
     def test_empty_json_body_is_rejected(self):
@@ -338,8 +350,8 @@ class ReviewValidationTests(BaseAppTestCase):
     def test_missing_review_returns_404_for_every_method(self):
         responses = [
             self.client.get("/api/reviews/999"),
-            self.client.patch("/api/reviews/999", json={"user_id": 1, "text": "x"}),
-            self.client.delete("/api/reviews/999", json={"user_id": 1}),
+            self.client.patch("/api/reviews/999", json={"text": "x"}),
+            self.client.delete("/api/reviews/999", json={}),
         ]
 
         for response in responses:
@@ -356,10 +368,10 @@ class ReviewValidationTests(BaseAppTestCase):
 
         self.assertEqual(response.get_json(), {"reviews": []})
 
-    def test_edit_requires_user_id_and_text(self):
+    def test_edit_requires_text_but_uses_session_identity(self):
         review_id = self.post_review().get_json()["review"]["id"]
 
-        for payload in ({}, {"user_id": 1}, {"text": "new"}):
+        for payload in ({}, {"user_id": 1}):
             with self.subTest(payload=payload):
                 response = self.client.patch(
                     f"/api/reviews/{review_id}", json=payload
@@ -367,17 +379,26 @@ class ReviewValidationTests(BaseAppTestCase):
 
                 self.assertEqual(response.status_code, 400)
 
+        response = self.client.patch(
+            f"/api/reviews/{review_id}", json={"text": "Updated."}
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json()["review"]["user_id"], 1)
+
     def test_failed_edits_leave_review_unchanged(self):
         review_id = self.post_review(text="Original.").get_json()["review"]["id"]
 
         empty_text = self.client.patch(
-            f"/api/reviews/{review_id}", json={"user_id": 1, "text": "  "}
+            f"/api/reviews/{review_id}", json={"text": "  "}
         )
         too_long = self.client.patch(
-            f"/api/reviews/{review_id}", json={"user_id": 1, "text": "a" * 5001}
+            f"/api/reviews/{review_id}", json={"text": "a" * 5001}
         )
+        with self.client.session_transaction() as session:
+            session["user_id"] = 2
         wrong_owner = self.client.patch(
-            f"/api/reviews/{review_id}", json={"user_id": 2, "text": "Hijack."}
+            f"/api/reviews/{review_id}", json={"text": "Hijack."}
         )
 
         self.assertEqual(empty_text.status_code, 400)
@@ -385,20 +406,21 @@ class ReviewValidationTests(BaseAppTestCase):
         self.assertEqual(wrong_owner.status_code, 403)
         self.assertEqual(app_module.reviews[review_id].text, "Original.")
 
-    def test_delete_requires_user_id_and_keeps_review(self):
+    def test_delete_uses_session_identity_without_body_user_id(self):
         review_id = self.post_review().get_json()["review"]["id"]
 
         response = self.client.delete(f"/api/reviews/{review_id}", json={})
 
-        self.assertEqual(response.status_code, 400)
-        self.assertIn(review_id, app_module.reviews)
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn(review_id, app_module.reviews)
 
     def test_non_owner_delete_keeps_review(self):
         review_id = self.post_review().get_json()["review"]["id"]
 
-        response = self.client.delete(
-            f"/api/reviews/{review_id}", json={"user_id": 2}
-        )
+        with self.client.session_transaction() as session:
+            session["user_id"] = 2
+
+        response = self.client.delete(f"/api/reviews/{review_id}", json={})
 
         self.assertEqual(response.status_code, 403)
         self.assertIn(review_id, app_module.reviews)
@@ -407,7 +429,7 @@ class ReviewValidationTests(BaseAppTestCase):
         review_id = self.post_review().get_json()["review"]["id"]
 
         deleted = self.client.delete(
-            f"/api/reviews/{review_id}", json={"user_id": 1}
+            f"/api/reviews/{review_id}", json={}
         )
         fetched = self.client.get(f"/api/reviews/{review_id}")
 

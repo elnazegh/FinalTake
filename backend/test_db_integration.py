@@ -153,8 +153,13 @@ class MediaCatalogInterfaceTests(unittest.TestCase):
 
     def setUp(self):
         app.config["TESTING"] = True
+        original_secret_key = app.config.get("SECRET_KEY")
+        app.config["SECRET_KEY"] = "backend-integration-tests-only-key"
+        self.addCleanup(app.config.__setitem__, "SECRET_KEY", original_secret_key)
         self.client = app.test_client()
         app_module.reviews.clear()
+        with self.client.session_transaction() as session:
+            session["user_id"] = 1
 
     def test_search_result_can_be_retrieved_by_its_id(self):
         results = self.client.get(
