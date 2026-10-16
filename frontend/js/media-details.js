@@ -68,12 +68,16 @@ async function loadMediaDetails() {
         const response = await fetch(
             `${API_BASE_URL}/api/media/${encodeURIComponent(mediaId)}`
         );
+if (response.status === 404) {
+    detailsContainer.textContent = "Media not found.";
+    return;
+}
 
-        if (!response.ok) {
-            throw new Error(
-                `Media request failed with status ${response.status}`
-            );
-        }
+if (!response.ok) {
+    throw new Error(
+        `Media request failed with status ${response.status}`
+    );
+}
 
         const media = await response.json();
         renderMediaDetails(media);
