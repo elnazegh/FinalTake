@@ -7,9 +7,33 @@ on:
   pull_request:
     branches: [main]
 
+
 jobs:
   backend-tests:
     runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: ci_root_only_password
+          MYSQL_DATABASE: finaltake_ci_test
+          MYSQL_USER: finaltake_ci
+          MYSQL_PASSWORD: ci_test_only_password
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=12
+
+    env:
+      RUN_MYSQL_INTEGRATION_TESTS: "1"
+      DB_HOST: "127.0.0.1"
+      DB_USER: "finaltake_ci"
+      DB_PASSWORD: "ci_test_only_password"
+      DB_NAME: "finaltake_ci_test"
 
     defaults:
       run:
@@ -39,17 +63,20 @@ jobs:
       - name: Run backend tests
         working-directory: backend
         run: |
+          set -o pipefail
           echo "Running backend tests for ${BUILD_VERSION}"
-          python -m unittest discover -s . -p "test_*.py" -v
+          python -m unittest discover -s . -p "test_*.py" -v 2>&1 | tee "$RUNNER_TEMP/backend-tests.log"
 
       - name: Run repository tests
         working-directory: .
         run: |
-          if [ -d "tests" ]; then
-            echo "Running repository tests for ${BUILD_VERSION}"
-            python -m unittest discover -s tests -p "test_*.py" -v
-          else
-            echo "No repository-level tests directory yet."
+
+          set -o pipefail
+          echo "Running repository tests for ${BUILD_VERSION}"
+
+          if [ ! -d "tests" ]; then
+            echo "::error::Repository test directory is missing." | tee "$RUNNER_TEMP/repository-tests.log"
+            exit 1
           fi
 
       - name: Run luis-files tests
@@ -74,8 +101,7 @@ jobs:
           name: ${{ env.BUILD_VERSION }}
           path: ${{ env.BUILD_VERSION }}.zip
 
-
- # Frontend/UX CI validation - Sprint 2
+  # Frontend/UX CI validation
   frontend-validation:
     runs-on: ubuntu-latest
 
@@ -83,8 +109,6 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-
- # Validate required frontend files
       - name: Validate frontend files
         run: |
           echo "Validating FinalTake frontend..."
@@ -96,3 +120,39 @@ jobs:
           test -f frontend/js/app.js
 
           echo "Frontend validation passed."
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Validate search JavaScript syntax
+        run: node --check frontend/js/app.js
+
+      - name: Run frontend API recovery integration test
+        run: |
+          set -o pipefail
+          node --test tests/search_integration.test.mjs 2>&1 | tee "$RUNNER_TEMP/search-tests.log"
+
+      - name: Run media details regression tests
+
+        run: |
+          set -o pipefail
+          node --test tests/media_details.test.mjs 2>&1 | tee "$RUNNER_TEMP/media-details-tests.log"
+
+      - name: Run authentication frontend regression tests
+        run: |
+          set -o pipefail
+          node --test tests/auth_login_errors.test.mjs 2>&1 | tee "$RUNNER_TEMP/auth-tests.log"
+
+      - name: Upload frontend test logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-test-logs
+          path: |
+            ${{ runner.temp }}/search-tests.log
+            ${{ runner.temp }}/media-details-tests.log
+            ${{ runner.temp }}/auth-tests.log
+          if-no-files-found: warn
+          retention-days: 7

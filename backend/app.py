@@ -1,7 +1,9 @@
-from flask import Flask, jsonify, request
-from werkzeug.security import generate_password_hash
+from flask import Flask, jsonify, request, session
+from werkzeug.security import generate_password_hash, check_password_hash
 from flask_cors import CORS
+from datetime import timedelta
 import re
+import os
 
 # These imports support both running app.py directly
 # and importing backend.app from the automated tests.
@@ -16,6 +18,18 @@ except ImportError:
 
 
 app = Flask(__name__)
+
+app.config["SECRET_KEY"] = os.environ.get("FLASK_SECRET_KEY")
+
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+
+app.config["SESSION_COOKIE_SECURE"] = (
+    os.environ.get("SESSION_COOKIE_SECURE", "false").lower()
+    == "true"
+)
+
+app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(hours=8)
 
 CORS(
     app,
@@ -34,8 +48,10 @@ CORS(
             ],
             "allow_headers": ["Content-Type"]
         }
-    }
+    },
+    supports_credentials=True
 )
+
 
 
 media_items = [
@@ -235,23 +251,27 @@ def get_media_details(media_id):
 @app.route("/api/reviews", methods=["POST"])
 def create_review():
     global next_review_id
+    current_user_id = session.get("user_id")
+
+    if current_user_id is None:
+        return jsonify({
+            "error": "Authentication required."
+        }), 401
 
     data = request.get_json(silent=True) or {}
 
-    user_id = data.get("user_id")
     media_id = data.get("media_id")
     rating = data.get("rating")
     text = data.get("text")
 
     if (
-        user_id is None
-        or media_id is None
+        media_id is None
         or rating is None
         or text is None
     ):
         return jsonify({
             "error": (
-                "user_id, media_id, rating, and text are required."
+                "media_id, rating, and text are required."
             )
         }), 400
 
@@ -272,7 +292,7 @@ def create_review():
 
     try:
         review = Review(
-            user_id=user_id,
+            user_id=current_user_id,
             media_id=str(media_id),
             rating=float(rating),
             text=text
@@ -339,6 +359,13 @@ def get_review(review_id):
 
 @app.route("/api/reviews/<int:review_id>", methods=["PATCH"])
 def update_review(review_id):
+    current_user_id = session.get("user_id")
+
+    if current_user_id is None:
+        return jsonify({
+            "error": "Authentication required."
+        }), 401
+
     review = reviews.get(review_id)
 
     if review is None:
@@ -348,17 +375,16 @@ def update_review(review_id):
 
     data = request.get_json(silent=True) or {}
 
-    user_id = data.get("user_id")
     text = data.get("text")
 
-    if user_id is None or text is None:
+    if text is None:
         return jsonify({
-            "error": "user_id and text are required."
+            "error": "text is required."
         }), 400
 
     try:
         review.edit_review(
-            user_id=user_id,
+            user_id=current_user_id,
             new_text=text
         )
 
@@ -382,6 +408,12 @@ def update_review(review_id):
 
 @app.route("/api/reviews/<int:review_id>", methods=["DELETE"])
 def remove_review(review_id):
+    current_user_id = session.get("user_id")
+
+    if current_user_id is None:
+        return jsonify({
+            "error": "Authentication required."
+        }), 401
     review = reviews.get(review_id)
 
     if review is None:
@@ -389,16 +421,8 @@ def remove_review(review_id):
             "error": "Review not found."
         }), 404
 
-    data = request.get_json(silent=True) or {}
-    user_id = data.get("user_id")
-
-    if user_id is None:
-        return jsonify({
-            "error": "user_id is required."
-        }), 400
-
     try:
-        review.delete_review(user_id)
+        review.delete_review(current_user_id)
 
     except PermissionError as error:
         return jsonify({
@@ -493,17 +517,106 @@ def register():
 
 @app.route("/api/auth/login", methods=["POST"])
 def login():
+    if not app.config.get("SECRET_KEY"):
+        return jsonify({
+            "error": "Authentication is not configured"
+        }), 503
+
+    data = request.get_json(silent=True)
+
+    if not isinstance(data, dict):
+        return jsonify({
+            "error": "A JSON object is required"
+        }), 400
+
+    identity = data.get("email") or data.get("username")
+    password = data.get("password")
+
+    if (
+        not isinstance(identity, str)
+        or not identity.strip()
+        or not isinstance(password, str)
+        or not password
+    ):
+        return jsonify({
+            "error": "Email or username and password are required"
+        }), 400
+
+    connection = None
+    cursor = None
+
+    try:
+        connection = get_db_connection()
+
+        cursor = connection.cursor(dictionary=True)
+
+        cursor.execute(
+            "SELECT user_id, username, email, password_hash "
+            "FROM users "
+            "WHERE email = %s OR username = %s "
+            "LIMIT 1",
+            (identity.strip(), identity.strip())
+        )
+
+        user = cursor.fetchone()
+
+    except Exception:
+        return jsonify({
+            "error": "Authentication service unavailable"
+        }), 503
+
+    finally:
+        if cursor is not None:
+            cursor.close()
+
+        if connection is not None:
+            connection.close()
+
+    if not user or not check_password_hash(
+        user["password_hash"], password
+    ):
+        session.clear()
+
+        return jsonify({
+            "error": "Invalid credentials"
+        }), 401
+
+    session.clear()
+
+    session["user_id"] = user["user_id"]
+    session.permanent = False
+
     return jsonify({
-        "message": "Login endpoint - not implemented yet"
-    }), 501
+        "message": "Login successful",
+        "user": {
+            "user_id": user["user_id"],
+            "username": user["username"],
+            "email": user["email"]
+        }
+    }), 200
 
 
 @app.route("/api/auth/logout", methods=["POST"])
 def logout():
-    return jsonify({
-        "message": "Logout endpoint - not implemented yet"
-    }), 501
+    session.clear()
 
+    return jsonify({
+        "message": "Logout successful"
+    }), 200
+
+@app.route("/api/auth/session", methods=["GET"])
+def auth_session():
+    user_id = session.get("user_id")
+
+    if user_id is None:
+        return jsonify({
+            "authenticated": False
+        }), 401
+
+    return jsonify({
+        "authenticated": True,
+        "user_id": user_id
+    }), 200
 
 @app.route("/api/auth/forgot-password", methods=["POST"])
 def forgot_password():
