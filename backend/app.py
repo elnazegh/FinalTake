@@ -164,11 +164,11 @@ def health_check():
             "database": "disconnected"
         }), 500
 
-    except Exception as error:
+    except Exception:
+        app.logger.exception("Health check failed")
         return jsonify({
             "status": "unhealthy",
-            "database": "disconnected",
-            "error": str(error)
+            "database": "disconnected"
         }), 500
 
 
