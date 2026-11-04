@@ -827,7 +827,11 @@ def reset_password():
             }), 400
 
         # Hash the new password
-        password_hash = generate_password_hash(new_password)
+        password_hash = generate_password_hash(
+            new_password,
+            method="pbkdf2:sha256"
+        )
+
 
         # Update the user's password
         cursor.execute(
