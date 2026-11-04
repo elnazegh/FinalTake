@@ -1,12 +1,16 @@
+from backend.tag import normalize_tags
+
+
 class Review:
     MAX_LENGTH = 5000
 
-    def __init__(self, user_id, media_id, rating, text):
+    def __init__(self, user_id, media_id, rating, text, tags=None):
         self.user_id = user_id
         self.media_id = media_id
         self.rating = rating
         self.text = None
         self.set_text(text)
+        self.tags = normalize_tags(tags)
 
     def set_text(self, text):
         if not isinstance(text, str):
@@ -39,6 +43,15 @@ class Review:
             )
 
         self.set_text(new_text)
+
+    def edit_tags(self, user_id, new_tags):
+        """Replace tags only if the Review is active and the user owns it."""
+        self.verify_owner(user_id)
+
+        if self.text is None:
+            raise ValueError("Cannot edit tags on a deleted review.")
+
+        self.tags = normalize_tags(new_tags)
 
     def delete_review(self, user_id):
         self.verify_owner(user_id)
