@@ -1,4 +1,10 @@
-from backend.tag import normalize_tags
+
+"""Review data and owner-checked review operations."""
+
+try:
+    from .tag import normalize_tags
+except ImportError:
+    from tag import normalize_tags
 
 
 class Review:
@@ -8,9 +14,23 @@ class Review:
         self.user_id = user_id
         self.media_id = media_id
         self.rating = rating
+        self._tags = tuple(normalize_tags(tags))
         self.text = None
         self.set_text(text)
-        self.tags = normalize_tags(tags)
+
+    @property
+    def tags(self):
+        """Return a copy so tag changes must use edit_tags()."""
+        return list(self._tags)
+
+    def _validate_combined_length(self, text, tags):
+        tag_text = ", ".join(tags)
+
+        if len(text) + len(tag_text) > self.MAX_LENGTH:
+            raise ValueError(
+                f"Review text and tags cannot exceed "
+                f"{self.MAX_LENGTH} characters."
+            )
 
     def set_text(self, text):
         if not isinstance(text, str):
@@ -21,11 +41,7 @@ class Review:
         if not text:
             raise ValueError("Review cannot be empty.")
 
-        if len(text) > self.MAX_LENGTH:
-            raise ValueError(
-                f"Review cannot exceed {self.MAX_LENGTH} characters."
-            )
-
+        self._validate_combined_length(text, self._tags)
         self.text = text
 
     def verify_owner(self, user_id):
@@ -38,20 +54,21 @@ class Review:
         self.verify_owner(user_id)
 
         if self.text is None:
-            raise ValueError(
-                "Cannot edit a deleted review."
-            )
+            raise ValueError("Cannot edit a deleted review.")
 
         self.set_text(new_text)
 
     def edit_tags(self, user_id, new_tags):
-        """Replace tags only if the Review is active and the user owns it."""
+        """Replace tags after validating ownership and combined length."""
         self.verify_owner(user_id)
 
         if self.text is None:
             raise ValueError("Cannot edit tags on a deleted review.")
 
-        self.tags = normalize_tags(new_tags)
+        normalized = normalize_tags(new_tags)
+        self._validate_combined_length(self.text, normalized)
+
+        self._tags = tuple(normalized)
 
     def delete_review(self, user_id):
         self.verify_owner(user_id)
