@@ -82,5 +82,6 @@ class Review:
             "user_id": self.user_id,
             "media_id": self.media_id,
             "rating": self.rating,
-            "text": self.text
+            "text": self.text,
+            "tags": self.tags
         }
