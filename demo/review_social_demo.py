@@ -1,3 +1,4 @@
+
 from backend.rating import Rating
 from backend.review import Review
 from backend.favorite import Favorites
@@ -54,6 +55,7 @@ while True:
     print("13. View Review Draft")
     print("14. Clear Review Draft")
     print("15. Exit")
+    print("16. Edit Review Tags")
 
     choice = input(
         "\nChoose an option: "
@@ -193,12 +195,17 @@ while True:
 
                 continue
 
+            tag_input = input(
+                "Tags (comma-separated, blank for none): "
+            )
+
             try:
                 new_review = Review(
                     mock_user_id,
                     mock_media_id,
                     rating.value,
-                    review_text
+                    review_text,
+                    tags=tag_input
                 )
 
                 # Replacing the review removes
@@ -299,6 +306,14 @@ while True:
                 print(
                     f"Review: "
                     f"{review_data['text']}"
+                )
+
+                print(
+                    "Tags: " + (
+                        ", ".join(review_data["tags"])
+                        if review_data["tags"]
+                        else "None"
+                    )
                 )
 
                 review_comments = [
@@ -750,6 +765,25 @@ while True:
         )
 
         break
+
+    elif choice == "16":
+        if review is None:
+            print("You have no review to edit tags for.")
+        else:
+            print(
+                "Current Tags: " + (
+                    ", ".join(review.tags)
+                    if review.tags else "None"
+                )
+            )
+            updated_tags = input(
+                "New tags (comma-separated, blank to clear): "
+            )
+            try:
+                review.edit_tags(mock_user_id, updated_tags)
+                print("Review tags updated successfully!")
+            except (ValueError, PermissionError) as error:
+                print(f"Error: {error}")
 
     else:
         print(

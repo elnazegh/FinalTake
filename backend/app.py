@@ -1,3 +1,4 @@
+
 from flask import Flask, jsonify, request, session
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_cors import CORS
@@ -51,7 +52,6 @@ CORS(
     },
     supports_credentials=True
 )
-
 
 
 media_items = [
@@ -232,6 +232,7 @@ def search():
         "results": results
     }), 200
 
+
 @app.route("/api/media/<int:media_id>", methods=["GET"])
 def get_media_details(media_id):
     media = get_media_by_id(media_id)
@@ -263,6 +264,7 @@ def create_review():
     media_id = data.get("media_id")
     rating = data.get("rating")
     text = data.get("text")
+    tags = data.get("tags")
 
     if (
         media_id is None
@@ -295,7 +297,8 @@ def create_review():
             user_id=current_user_id,
             media_id=str(media_id),
             rating=float(rating),
-            text=text
+            text=text,
+            tags=tags
         )
 
     except ValueError as error:
@@ -414,6 +417,7 @@ def remove_review(review_id):
         return jsonify({
             "error": "Authentication required."
         }), 401
+
     review = reviews.get(review_id)
 
     if review is None:
@@ -604,6 +608,7 @@ def logout():
         "message": "Logout successful"
     }), 200
 
+
 @app.route("/api/auth/session", methods=["GET"])
 def auth_session():
     user_id = session.get("user_id")
@@ -617,6 +622,7 @@ def auth_session():
         "authenticated": True,
         "user_id": user_id
     }), 200
+
 
 @app.route("/api/auth/forgot-password", methods=["POST"])
 def forgot_password():

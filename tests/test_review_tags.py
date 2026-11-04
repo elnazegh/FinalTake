@@ -109,7 +109,7 @@ class TestReviewTags(unittest.TestCase):
         with self.assertRaises(ValueError):
             review.edit_tags(1, "comedy")
 
-        self.assertEqual(review.tags, ["art"])
+        self.assertEqual(review.tags, [])
 
     def test_returned_tag_list_cannot_mutate_review(self):
         review = Review(

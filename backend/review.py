@@ -73,6 +73,7 @@ class Review:
     def delete_review(self, user_id):
         self.verify_owner(user_id)
         self.text = None
+        self._tags = ()
 
     def to_dict(self):
         if self.text is None:
