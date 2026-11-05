@@ -6,18 +6,19 @@ from datetime import timedelta
 import re
 import os
 
-# These imports support both running app.py directly
-# and importing backend.app from the automated tests.
+# Support direct execution and package imports.
 try:
     from .database import get_db_connection
     from .rating import Rating
     from .review import Review
     from .tag import normalize_tags
+    from .tag_follow_api import tag_follow_bp
 except ImportError:
     from database import get_db_connection
     from rating import Rating
     from review import Review
     from tag import normalize_tags
+    from tag_follow_api import tag_follow_bp
 
 
 app = Flask(__name__)
@@ -54,6 +55,8 @@ CORS(
     },
     supports_credentials=True
 )
+
+app.register_blueprint(tag_follow_bp)
 
 
 media_items = [
@@ -100,8 +103,7 @@ media_items = [
 ]
 
 
-# Temporary in-memory review storage until
-# database review persistence is available.
+# Temporary in-memory Review storage.
 reviews = {}
 next_review_id = 1
 
@@ -254,6 +256,7 @@ def get_media_details(media_id):
 @app.route("/api/reviews", methods=["POST"])
 def create_review():
     global next_review_id
+
     current_user_id = session.get("user_id")
 
     if current_user_id is None:
@@ -336,6 +339,7 @@ def get_reviews():
 
         try:
             normalized_tags = normalize_tags(tag_query)
+
         except ValueError as error:
             return jsonify({
                 "error": str(error)
