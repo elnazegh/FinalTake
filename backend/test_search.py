@@ -1,5 +1,6 @@
 import unittest
 from app import app
+from unittest.mock import patch
 
 
 class SearchApiTests(unittest.TestCase):
@@ -224,6 +225,29 @@ class SearchApiTests(unittest.TestCase):
             sorted(years, reverse=True)
         )
 
+
+    def test_unexpected_search_error_does_not_expose_internal_details(self):
+        class FailingMedia:
+            def __getitem__(self, key):
+                raise RuntimeError("private-search-backend-detail")
+
+        with patch("app.media_items", [FailingMedia()]):
+            with patch.dict(app.config, {
+                "TESTING": False,
+                "DEBUG": False,
+                "PROPAGATE_EXCEPTIONS": False
+            }):
+                response = self.client.get(
+                    "/api/search",
+                    query_string={"query": "dark"}
+                )
+
+        self.assertEqual(response.status_code, 500)
+
+        body = response.get_data(as_text=True)
+
+        self.assertNotIn("private-search-backend-detail", body)
+        self.assertNotIn("Traceback", body)
 
 if __name__ == "__main__":
     unittest.main()
