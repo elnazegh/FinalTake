@@ -2,8 +2,78 @@ import unittest
 from app import app
 from unittest.mock import patch
 
-
 class SearchApiTests(unittest.TestCase):
+    def test_oversized_search_query(self):
+        response = self.client.get(
+            "/api/search",
+            query_string={"query": "A" * 10000}
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json(), {"results": []})
+
+    def test_invalid_search_filters_and_sort(self):
+        for field, value in [
+            ("genre", "invalid_genre_xyz"),
+            ("media_type", "invalid_type_xyz")
+        ]:
+            with self.subTest(field=field):
+                response = self.client.get(
+                    "/api/search",
+                    query_string={"query": "dark", field: value}
+                )
+
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(response.get_json(), {"results": []})
+
+        default_response = self.client.get(
+            "/api/search",
+            query_string={"query": "dark"}
+        )
+
+        invalid_sort_response = self.client.get(
+            "/api/search",
+            query_string={"query": "dark", "sort": "invalid_sort_xyz"}
+        )
+
+        self.assertEqual(invalid_sort_response.status_code, 200)
+        self.assertEqual(
+            invalid_sort_response.get_json(),
+            default_response.get_json()
+        )
+
+    def test_special_character_search_queries(self):
+        queries = [
+            "'\"<>",
+            "<script>alert(1)</script>",
+            "日本語 🎬",
+            "dark' OR '1'='1"
+        ]
+
+        for query in queries:
+            with self.subTest(query=query):
+                response = self.client.get(
+                    "/api/search",
+                    query_string={"query": query}
+                )
+
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(response.get_json(), {"results": []})
+
+    def test_combined_invalid_search_parameters(self):
+        response = self.client.get(
+            "/api/search",
+            query_string={
+                "query": "A" * 10000,
+                "genre": "invalid_genre_xyz",
+                "media_type": "invalid_type_xyz",
+                "sort": "invalid_sort_xyz"
+            }
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json(), {"results": []})
+
 
     def test_whitespace_only_query(self):
         response = self.client.get(
