@@ -1,0 +1,45 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0">
+
+  <title>Rating Interface | FinalTake</title>
+
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+
+<body>
+  <header class="site-header">
+    <div class="logo">
+      <a href="../index.html">FinalTake</a>
+    </div>
+  </header>
+
+  <main class="auth-page">
+    <section class="auth-card">
+      <h1>Rate This Media</h1>
+
+      <p>Select a rating from 0.5 to 5 stars.</p>
+
+      <div id="rating-container"></div>
+    </section>
+  </main>
+
+  <script src="../js/rating-ui.js"></script>
+
+  <script>
+    const ratingContainer =
+      document.getElementById("rating-container");
+
+    const ratingSelector = createRatingSelector(
+      ratingContainer,
+      (value) => {
+        console.log("Selected rating:", value);
+      }
+    );
+  </script>
+</body>
+</html>
