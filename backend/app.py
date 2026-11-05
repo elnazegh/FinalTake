@@ -12,10 +12,12 @@ try:
     from .database import get_db_connection
     from .rating import Rating
     from .review import Review
+    from .tag import normalize_tags
 except ImportError:
     from database import get_db_connection
     from rating import Rating
     from review import Review
+    from tag import normalize_tags
 
 
 app = Flask(__name__)
@@ -322,6 +324,29 @@ def create_review():
 @app.route("/api/reviews", methods=["GET"])
 def get_reviews():
     media_id = request.args.get("media_id")
+    tag_query = request.args.get("tag")
+    selected_tag = None
+
+    if tag_query is not None:
+        # Browse by exactly one complete tag.
+        if "," in tag_query:
+            return jsonify({
+                "error": "Filter by exactly one tag at a time."
+            }), 400
+
+        try:
+            normalized_tags = normalize_tags(tag_query)
+        except ValueError as error:
+            return jsonify({
+                "error": str(error)
+            }), 400
+
+        if len(normalized_tags) != 1:
+            return jsonify({
+                "error": "A non-empty tag is required."
+            }), 400
+
+        selected_tag = normalized_tags[0]
 
     results = []
 
@@ -329,6 +354,12 @@ def get_reviews():
         if media_id is not None:
             if str(review.media_id) != str(media_id):
                 continue
+
+        if (
+            selected_tag is not None
+            and selected_tag not in review.tags
+        ):
+            continue
 
         review_data = serialize_review(
             review_id,
