@@ -224,6 +224,42 @@ class SearchApiTests(unittest.TestCase):
             sorted(years, reverse=True)
         )
 
+    def test_search_results_match_media_details(self):
+        response = self.client.get(
+            "/api/search",
+            query_string={"query": "dark"}
+        )
+
+        self.assertEqual(response.status_code, 200)
+
+        results = response.get_json()["results"]
+        media_types = [item["type"] for item in results]
+
+        self.assertIn("movie", media_types)
+        self.assertIn("tv", media_types)
+
+        for media in results:
+            with self.subTest(media_id=media["id"]):
+                details_response = self.client.get(
+                    f"/api/media/{media['id']}"
+                )
+
+                self.assertEqual(details_response.status_code, 200)
+
+                details = details_response.get_json()
+
+                for field in (
+                    "id",
+                    "title",
+                    "type",
+                    "genre",
+                    "releaseYear",
+                    "imageUrl"
+                ):
+                    self.assertEqual(
+                        details[field],
+                        media[field]
+                    )
 
 if __name__ == "__main__":
     unittest.main()
