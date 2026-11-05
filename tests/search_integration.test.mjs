@@ -137,3 +137,115 @@ test("frontend search recovers after a mocked HTTP 500 response", async () => {
         "Darkest Hour"
     );
 });
+
+test("latest search results remain visible when responses arrive out of order", async () => {
+    const elements = {
+        ".hero-search": createElement(),
+        "media-search": createElement(),
+        "search-results": createElement(),
+        "search-results-grid": createElement(),
+        "genre-filter": createElement(),
+        "media-type-filter": createElement(),
+        "sort-filter": createElement()
+    };
+
+    function deferred() {
+        let resolve;
+        const promise = new Promise((res) => {
+            resolve = res;
+        });
+        return { promise, resolve };
+    }
+
+    const first = deferred();
+    const second = deferred();
+    const requests = [];
+
+    const document = {
+        querySelector: (selector) => elements[selector],
+        getElementById: (id) => elements[id],
+        createElement
+    };
+
+    const window = {
+        location: {
+            hostname: "127.0.0.1",
+            protocol: "http:",
+            origin: "http://127.0.0.1:5500"
+        }
+    };
+
+    async function mockFetch(url) {
+        requests.push(url);
+        return requests.length === 1 ? first.promise : second.promise;
+    }
+
+    runInNewContext(appCode, {
+        window,
+        document,
+        fetch: mockFetch,
+        URLSearchParams,
+        console: { error() {} }
+    });
+
+    const form = elements[".hero-search"];
+    const grid = elements["search-results-grid"];
+    const event = { preventDefault() {} };
+
+    elements["media-search"].value = "dark";
+    elements["genre-filter"].value = "Drama";
+    elements["media-type-filter"].value = "tv";
+
+    const olderSearch = form.submit(event);
+
+    elements["media-search"].value = "dune";
+    elements["genre-filter"].value = "Science Fiction";
+    elements["media-type-filter"].value = "book";
+
+    const newerSearch = form.submit(event);
+
+    assert.equal(requests.length, 2);
+
+    const latestRequest = new URL(requests[1]);
+    assert.equal(latestRequest.searchParams.get("query"), "dune");
+    assert.equal(latestRequest.searchParams.get("genre"), "Science Fiction");
+    assert.equal(latestRequest.searchParams.get("media_type"), "book");
+
+    second.resolve({
+        ok: true,
+        json: async () => ({
+            results: [{
+                id: "4",
+                title: "Dune",
+                type: "book",
+                releaseYear: 1965
+            }]
+        })
+    });
+
+    await newerSearch;
+
+    assert.equal(
+        grid.children[0].children[1].children[0].textContent,
+        "Dune"
+    );
+
+    first.resolve({
+        ok: true,
+        json: async () => ({
+            results: [{
+                id: "2",
+                title: "Dark",
+                type: "tv",
+                releaseYear: 2017
+            }]
+        })
+    });
+
+    await olderSearch;
+
+    assert.equal(
+        grid.children[0].children[1].children[0].textContent,
+        "Dune"
+    );
+});

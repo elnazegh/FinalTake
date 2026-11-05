@@ -10,6 +10,7 @@ const searchResultsGrid = document.getElementById("search-results-grid");
 const genreFilter = document.getElementById("genre-filter");
 const mediaTypeFilter = document.getElementById("media-type-filter");
 const sortFilter = document.getElementById("sort-filter");
+let latestSearchRequestId = 0;
 
 function renderSearchResults(results) {
     searchResultsGrid.innerHTML = "";
@@ -65,6 +66,7 @@ if (searchForm && searchInput) {
         if (!query) {
             return;
         }
+        const currentRequestId = ++latestSearchRequestId;
 
         const params = new URLSearchParams({
             query: query
@@ -100,9 +102,17 @@ if (searchForm && searchInput) {
                 throw new Error("Search response did not contain valid results.");
             }
 
+            if (currentRequestId !== latestSearchRequestId) {
+                return;
+            }
+
             renderSearchResults(data.results);
 
         } catch (error) {
+            if (currentRequestId !== latestSearchRequestId) {
+                return;
+            }
+
             searchResultsGrid.innerHTML = "";
             searchResultsGrid.textContent =
                 "Unable to load search results. Please try again.";
