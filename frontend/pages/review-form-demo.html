@@ -1,0 +1,61 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Submit a Review | FinalTake</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+
+<body>
+  <header class="site-header">
+    <div class="logo">
+      <a href="../index.html">FinalTake</a>
+    </div>
+  </header>
+
+  <main class="auth-page">
+    <section class="auth-card">
+      <h1>Write a Review</h1>
+      <p>Share your thoughts about this media.</p>
+
+      <form id="review-form">
+        <label for="review-rating">Your Rating</label>
+
+        <select id="review-rating" required>
+          <option value="">Select a rating</option>
+          <option value="0.5">0.5 stars</option>
+          <option value="1">1 star</option>
+          <option value="1.5">1.5 stars</option>
+          <option value="2">2 stars</option>
+          <option value="2.5">2.5 stars</option>
+          <option value="3">3 stars</option>
+          <option value="3.5">3.5 stars</option>
+          <option value="4">4 stars</option>
+          <option value="4.5">4.5 stars</option>
+          <option value="5">5 stars</option>
+        </select>
+
+        <label for="review-text">Your Review</label>
+
+        <textarea
+          id="review-text"
+          rows="6"
+          maxlength="5000"
+          required
+          placeholder="Write your review here..."
+        ></textarea>
+
+        <p id="review-count">0 / 5000 characters</p>
+
+        <button type="submit">Submit Review</button>
+      </form>
+
+      <p id="review-message" role="status" aria-live="polite"></p>
+    </section>
+  </main>
+
+  <script src="../js/review-form.js"></script>
+</body>
+</html>
