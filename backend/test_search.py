@@ -1,5 +1,7 @@
 import unittest
 from app import app
+from unittest.mock import patch
+from favorite import Favorites
 
 
 class SearchApiTests(unittest.TestCase):
@@ -260,6 +262,73 @@ class SearchApiTests(unittest.TestCase):
                         details[field],
                         media[field]
                     )
+
+
+    def test_search_media_id_used_for_reviews_and_favorites(self):
+        response = self.client.get(
+            "/api/search",
+            query_string={"query": "dark"}
+        )
+
+        self.assertEqual(response.status_code, 200)
+        results = response.get_json()["results"]
+
+        selected = next(
+            item for item in results
+            if item["title"] == "The Dark Knight"
+        )
+        other = next(
+            item for item in results
+            if item["id"] != selected["id"]
+        )
+
+        with patch.dict(app.config, {"SECRET_KEY": "integration-test-key"}):
+            with patch("app.reviews", {}), patch("app.next_review_id", 1):
+                with self.client.session_transaction() as session:
+                    session["user_id"] = 1
+
+                created = self.client.post(
+                    "/api/reviews",
+                    json={
+                        "media_id": selected["id"],
+                        "rating": 4.5,
+                        "text": "Integration test review."
+                    }
+                )
+
+                self.assertEqual(created.status_code, 201)
+
+                review = created.get_json()["review"]
+                self.assertEqual(review["media_id"], selected["id"])
+                self.assertEqual(review["media_title"], selected["title"])
+
+                selected_reviews = self.client.get(
+                    "/api/reviews",
+                    query_string={"media_id": selected["id"]}
+                )
+
+                self.assertEqual(selected_reviews.status_code, 200)
+                self.assertEqual(
+                    len(selected_reviews.get_json()["reviews"]),
+                    1
+                )
+
+                other_reviews = self.client.get(
+                    "/api/reviews",
+                    query_string={"media_id": other["id"]}
+                )
+
+                self.assertEqual(other_reviews.status_code, 200)
+                self.assertEqual(
+                    other_reviews.get_json()["reviews"],
+                    []
+                )
+
+        favorites = Favorites(user_id=1)
+        self.assertTrue(favorites.add_favorite(selected["id"]))
+        self.assertTrue(favorites.is_favorited(selected["id"]))
+        self.assertFalse(favorites.is_favorited(other["id"]))
+        self.assertIn(selected["id"], favorites.get_favorites())
 
 if __name__ == "__main__":
     unittest.main()
