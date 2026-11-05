@@ -162,7 +162,7 @@ jobs:
 
       - name: Upload frontend test logs
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4a
         with:
           name: frontend-test-logs
           path: |
