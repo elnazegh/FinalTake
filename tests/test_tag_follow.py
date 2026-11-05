@@ -364,6 +364,56 @@ class TagFollowApiTests(unittest.TestCase):
             ["comedy"]
         )
 
+    def test_logout_blocks_tag_follow_routes(self):
+        """Logout must block access without erasing follow state."""
+        follow_response = self.client.post(
+            "/api/tags/following",
+            json={"tag": "Drama"}
+        )
+
+        self.assertEqual(
+            follow_response.status_code,
+            201
+        )
+
+        logout_response = self.client.post(
+            "/api/auth/logout"
+        )
+
+        self.assertEqual(
+            logout_response.status_code,
+            200
+        )
+
+        # The same client should now be unauthenticated.
+        self.assertEqual(
+            self.client.get(
+                "/api/tags/following"
+            ).status_code,
+            401
+        )
+
+        self.assertEqual(
+            self.client.post(
+                "/api/tags/following",
+                json={"tag": "Comedy"}
+            ).status_code,
+            401
+        )
+
+        self.assertEqual(
+            self.client.delete(
+                "/api/tags/following/drama"
+            ).status_code,
+            401
+        )
+
+        # Logging out must not erase saved follow preferences.
+        self.assertEqual(
+            tag_follows.get_followed_tags(1),
+            ["drama"]
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
