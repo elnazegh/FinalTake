@@ -772,3 +772,8 @@ input:focus-visible,
   color: #cbd5e1;
   line-height: 1.6;
 }
+
+/* Keep elements hidden when JavaScript sets hidden */
+[hidden] {
+  display: none !important;
+}
