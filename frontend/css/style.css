@@ -878,3 +878,7 @@ input:focus-visible,
     font-size: 38px;
   }
 }
+/* Keep elements hidden when JavaScript sets hidden */
+[hidden] {
+  display: none !important;
+}

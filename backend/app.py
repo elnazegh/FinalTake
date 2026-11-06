@@ -164,11 +164,11 @@ def health_check():
             "database": "disconnected"
         }), 500
 
-    except Exception as error:
+    except Exception:
+        app.logger.exception("Health check failed")
         return jsonify({
             "status": "unhealthy",
-            "database": "disconnected",
-            "error": str(error)
+            "database": "disconnected"
         }), 500
 
 
@@ -480,10 +480,12 @@ def register():
         method="pbkdf2:sha256"
     )
 
-    connection = get_db_connection()
-    cursor = connection.cursor()
+    connection = None
+    cursor = None
 
     try:
+        connection = get_db_connection()
+        cursor = connection.cursor()
         cursor.execute(
             """
             INSERT INTO users (username, email, password_hash)
@@ -495,7 +497,8 @@ def register():
         connection.commit()
 
     except Exception as error:
-        connection.rollback()
+        if connection is not None:
+            connection.rollback()
 
         if "Duplicate entry" in str(error):
             return jsonify({
@@ -507,8 +510,10 @@ def register():
         }), 500
 
     finally:
-        cursor.close()
-        connection.close()
+        if cursor is not None:
+            cursor.close()
+        if connection is not None:
+            connection.close()
 
     return jsonify({
         "message": "User registered successfully"
