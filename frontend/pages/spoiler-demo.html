@@ -1,0 +1,56 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0">
+  <title>Spoiler Controls | FinalTake</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+
+<body>
+  <header class="site-header">
+    <div class="logo">
+      <a href="../index.html">FinalTake</a>
+    </div>
+  </header>
+
+  <main class="auth-page">
+    <section class="auth-card">
+      <a href="../index.html">← Back to Home</a>
+
+      <h1>Spoiler Controls</h1>
+      <p>Choose when to reveal spoiler content.</p>
+
+      <section aria-labelledby="spoiler-heading">
+        <h2 id="spoiler-heading">Review</h2>
+
+        <article class="spoiler-card">
+          <p><strong>Spoiler Warning</strong></p>
+
+          <p id="spoiler-placeholder">
+            This review contains spoilers.
+          </p>
+
+          <p id="spoiler-content" hidden>
+            The main character discovers the secret
+            identity in the final scene.
+          </p>
+
+          <button
+            id="spoiler-toggle"
+            type="button"
+            aria-expanded="false"
+            aria-controls="spoiler-content"
+          >
+            Show Spoiler
+          </button>
+        </article>
+      </section>
+    </section>
+  </main>
+
+  <script src="../js/spoiler-ui.js"></script>
+</body>
+</html>

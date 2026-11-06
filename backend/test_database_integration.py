@@ -36,7 +36,16 @@ class MySQLDatabaseIntegrationTests(unittest.TestCase):
             cursor = connection.cursor()
             try:
                 schema_path = Path(__file__).with_name("schema.sql")
-                cursor.execute(schema_path.read_text().strip())
+
+                # Execute each SQL statement separately
+                sql_statements = schema_path.read_text().split(";")
+
+                for statement in sql_statements:
+                    statement = statement.strip()
+
+                    if statement:
+                        cursor.execute(statement)
+
                 connection.commit()
             finally:
                 cursor.close()
