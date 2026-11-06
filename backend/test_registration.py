@@ -182,6 +182,43 @@ class RegistrationApiTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 400)
 
+    # SOC 2 CC6.2 - Reject weak passwords
+    def test_password_too_short(self):
+        response = self.client.post(
+            "/api/auth/register",
+            json={
+                "username": "teststudent",
+                "email": "teststudent@example.com",
+                "password": "123"
+            }
+        )
+
+        self.assertEqual(response.status_code, 400)
+
+        self.assertEqual(
+            response.json["error"],
+            "Password must be at least 8 characters"
+        )
+
+
+    # SOC 2 CC6.2 - Reject invalid registration data types
+    def test_invalid_registration_types(self):
+        response = self.client.post(
+            "/api/auth/register",
+            json={
+                "username": 12345,
+                "email": ["student@example.com"],
+                "password": "Password123!"
+            }
+        )
+
+        self.assertEqual(response.status_code, 400)
+
+        self.assertEqual(
+            response.json["error"],
+            "Username, email, and password must be strings"
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
