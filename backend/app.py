@@ -440,7 +440,12 @@ def remove_review(review_id):
 
 @app.route("/api/auth/register", methods=["POST"])
 def register():
-    data = request.get_json()
+    data = request.get_json(silent=True)
+
+    if not isinstance(data, dict):
+        return jsonify({
+            "error": "A JSON object is required"
+        }), 400
 
     if not data:
         return jsonify({
@@ -461,10 +466,27 @@ def register():
             "error": "Email is required"
         }), 400
 
-    if not password:
+    if not isinstance(password, str) or not password:
         return jsonify({
             "error": "Password is required"
         }), 400
+
+    # SOC 2 CC6.2 - Validate input types
+    if (
+        not isinstance(username, str)
+        or not isinstance(email, str)
+        or not isinstance(password, str)
+    ):
+        return jsonify({
+            "error": "Username, email, and password must be strings"
+        }), 400
+
+    # SOC 2 CC6.2 - Require at least 8 characters
+    if len(password) < 8:
+        return jsonify({
+            "error": "Password must be at least 8 characters"
+        }), 400
+
 
     email_pattern = r"^[^@\s]+@[^@\s]+\.[^@\s]+$"
 
