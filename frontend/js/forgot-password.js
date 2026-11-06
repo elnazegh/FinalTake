@@ -1,4 +1,12 @@
 
+const API_BASE_URL =
+    window.FINALTAKE_API_BASE_URL ||
+    (
+        ["localhost", "127.0.0.1"].includes(window.location.hostname)
+            ? `${window.location.protocol}//${window.location.hostname}:5000`
+            : window.location.origin
+    );
+
 const forgotPasswordForm = document.getElementById("forgot-password-form");
 const message = document.getElementById("forgot-password-message");
 
@@ -17,7 +25,7 @@ forgotPasswordForm.addEventListener("submit", async (event) => {
     try {
         // Send the email to the Flask backend
         const response = await fetch(
-            "http://127.0.0.1:5000/api/auth/forgot-password",
+            `${API_BASE_URL}/api/auth/forgot-password`,
             {
                 method: "POST",
                 headers: {

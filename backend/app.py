@@ -22,6 +22,9 @@ except ImportError:
     from rating import Rating
     from review import Review
 
+PASSWORD_RESET_RESPONSE = {
+    "message": "If an account exists for this email, password reset instructions will be sent."
+}
 
 app = Flask(__name__)
 
@@ -651,7 +654,7 @@ def send_password_reset_email(email, reset_token):
 
     frontend_url = os.getenv(
         "FRONTEND_BASE_URL",
-        "http://127.0.0.1:5500"
+        "http://127.0.0.1:5500/frontend"
     )
 
     # Create the password reset link
@@ -767,18 +770,18 @@ def forgot_password():
 
             print("Password reset email sent successfully")
 
-
-
     except Exception:
-        app.logger.exception("Password recovery database operation failed")
+        app.logger.exception("Password recovery operation failed")
 
         if connection is not None:
-            connection.rollback()
+            try:
+                connection.rollback()
+            except Exception:
+                app.logger.exception(
+                    "Password recovery rollback failed"
+                )
 
-        return jsonify({
-            "error": "Password recovery service unavailable"
-        }), 503
-
+        return jsonify(PASSWORD_RESET_RESPONSE), 200
 
     finally:
         if cursor is not None:
@@ -788,9 +791,7 @@ def forgot_password():
             connection.close()
 
     # Do not reveal whether the account exists
-    return jsonify({
-        "message": "If an account exists for this email, password reset instructions will be sent."
-    }), 200
+    return jsonify(PASSWORD_RESET_RESPONSE), 200
 
 
 @app.route("/api/auth/reset-password", methods=["POST"])

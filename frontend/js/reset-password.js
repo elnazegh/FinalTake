@@ -1,3 +1,10 @@
+const API_BASE_URL =
+    window.FINALTAKE_API_BASE_URL ||
+    (
+        ["localhost", "127.0.0.1"].includes(window.location.hostname)
+            ? `${window.location.protocol}//${window.location.hostname}:5000`
+            : window.location.origin
+    );
 
 const resetForm = document.getElementById("reset-password-form");
 const resetMessage = document.getElementById("reset-password-message");
@@ -54,7 +61,7 @@ resetForm.addEventListener("submit", async (event) => {
 
     try {
         const response = await fetch(
-            "http://127.0.0.1:5000/api/auth/reset-password",
+            `${API_BASE_URL}/api/auth/reset-password`,
             {
                 method: "POST",
                 headers: {

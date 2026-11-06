@@ -287,5 +287,45 @@ class PasswordRecoveryApiTests(unittest.TestCase):
         )
 
 
+    # Test 11: SMTP failures must not reveal account existence
+    @patch("app.send_password_reset_email")
+    @patch("app.get_db_connection")
+    def test_smtp_failure_does_not_reveal_account(
+        self, mock_db, mock_email
+    ):
+        cursor = MagicMock()
+        mock_db.return_value.cursor.return_value = cursor
+
+        mock_email.side_effect = Exception("SMTP unavailable")
+
+        # Test registered email with SMTP failure
+        cursor.fetchone.return_value = {
+            "user_id": 17,
+            "email": "student@example.com"
+        }
+
+        registered = self.client.post(
+            "/api/auth/forgot-password",
+            json={"email": "student@example.com"}
+        )
+
+        # Test nonexistent email
+        cursor.fetchone.return_value = None
+
+        unregistered = self.client.post(
+            "/api/auth/forgot-password",
+            json={"email": "missing@example.com"}
+        )
+
+        # Both requests must return the same response
+        self.assertEqual(registered.status_code, 200)
+        self.assertEqual(unregistered.status_code, 200)
+
+        self.assertEqual(
+            registered.get_json(),
+            unregistered.get_json()
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
