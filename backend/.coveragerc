@@ -1,0 +1,20 @@
+[run]
+branch = True
+source = .
+# database_test.py is a manual database read script, not application code.
+omit =
+    */test_*.py
+    */tests/*
+    */database_test.py
+    */venv/*
+    */.venv/*
+    */env/*
+
+[report]
+show_missing = True
+
+[xml]
+output = coverage.xml
+
+[html]
+directory = htmlcov
