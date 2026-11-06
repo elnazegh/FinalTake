@@ -773,6 +773,111 @@ input:focus-visible,
   line-height: 1.6;
 }
 
+/* Sprint 4 - Five Star Rating Interface
+   FC4G6-96 / FC4G6-97 */
+
+.rating-selector {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 20px 12px;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  text-align: center;
+}
+
+.rating-selector .rating-stars {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 6px;
+  margin: 10px auto 18px;
+}
+
+.rating-selector .rating-star {
+  position: relative;
+  display: block;
+  width: 44px;
+  height: 48px;
+  flex: 0 0 44px;
+}
+
+.rating-selector .star-background,
+.rating-selector .star-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: block;
+  font-size: 44px;
+  line-height: 48px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.rating-selector .star-background {
+  color: #475569;
+}
+
+.rating-selector .star-fill {
+  color: #fbbf24;
+  width: 0;
+  overflow: hidden;
+}
+
+.rating-selector .rating-star .rating-half {
+  position: relative;
+  z-index: 2;
+  display: inline-block;
+  width: 50%;
+  height: 48px;
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent !important;
+  box-shadow: none;
+  color: transparent;
+  cursor: pointer;
+  vertical-align: top;
+}
+
+.rating-selector .rating-star .rating-half:hover,
+.rating-selector .rating-star .rating-half[aria-pressed="true"] {
+  background: transparent !important;
+}
+
+.rating-selector .rating-star .rating-half:focus-visible {
+  background: transparent !important;
+  outline: 2px solid #fbbf24;
+  outline-offset: 2px;
+}
+
+.rating-selector .rating-value {
+  color: #fbbf24;
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0;
+}
+
+@media (max-width: 600px) {
+  .rating-selector .rating-stars {
+    gap: 3px;
+  }
+
+  .rating-selector .rating-star {
+    width: 38px;
+    flex-basis: 38px;
+  }
+
+  .rating-selector .star-background,
+  .rating-selector .star-fill {
+    font-size: 38px;
+  }
+}
 /* Keep elements hidden when JavaScript sets hidden */
 [hidden] {
   display: none !important;
