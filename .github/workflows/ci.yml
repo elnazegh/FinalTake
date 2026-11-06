@@ -1,3 +1,4 @@
+
 name: FinalTake CI
 
 on:
@@ -72,10 +73,16 @@ jobs:
           echo "Running backend tests for ${BUILD_VERSION}"
           python -m unittest discover -s . -p "test_*.py" -v 2>&1 | tee "$RUNNER_TEMP/backend-tests.log"
 
+      - name: Run Tag and Tag Following regression tests
+        working-directory: .
+        run: |
+          set -o pipefail
+          echo "Running Tag and Tag Following tests for ${BUILD_VERSION}"
+          python -m unittest discover -s tests -p "test_*tag*.py" -v 2>&1 | tee "$RUNNER_TEMP/tag-tests.log"
+
       - name: Run repository tests
         working-directory: .
         run: |
-
           set -o pipefail
           echo "Running repository tests for ${BUILD_VERSION}"
 
@@ -94,10 +101,10 @@ jobs:
           path: |
             ${{ runner.temp }}/backend-tests.log
             ${{ runner.temp }}/repository-tests.log
+            ${{ runner.temp }}/tag-tests.log
           if-no-files-found: warn
           retention-days: 7
 
-      
       - name: Package application
         run: |
           cd ..
@@ -154,7 +161,6 @@ jobs:
           node --test tests/search_integration.test.mjs 2>&1 | tee "$RUNNER_TEMP/search-tests.log"
 
       - name: Run media details regression tests
-
         run: |
           set -o pipefail
           node --test tests/media_details.test.mjs 2>&1 | tee "$RUNNER_TEMP/media-details-tests.log"

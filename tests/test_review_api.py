@@ -1,3 +1,4 @@
+
 import unittest
 
 from backend import app as app_module
@@ -20,6 +21,7 @@ class ReviewApiTests(unittest.TestCase):
         # Simulate an authenticated review owner.
         with self.client.session_transaction() as sess:
             sess["user_id"] = 1
+
     def tearDown(self):
         app_module.app.config["SECRET_KEY"] = self.original_secret_key
 
@@ -358,6 +360,7 @@ class ReviewApiTests(unittest.TestCase):
             reviews[0]["media_title"],
             media["title"]
         )
+
     def test_unauthenticated_cannot_create_review(self):
         anonymous = app_module.app.test_client()
 
@@ -417,7 +420,6 @@ class ReviewApiTests(unittest.TestCase):
         )
 
         self.assertEqual(remaining.status_code, 200)
-
 
     def test_forged_user_id_does_not_change_review_owner(self):
         response = self.client.post(
@@ -502,6 +504,96 @@ class ReviewApiTests(unittest.TestCase):
             app_module.reviews[review_id].text,
             "Great movie."
         )
+
+    def test_create_and_retrieve_review_with_tags(self):
+        created = self.client.post(
+            "/api/reviews",
+            json={
+                "media_id": "1",
+                "rating": 4.5,
+                "text": "Great movie.",
+                "tags": "Sci Fi, Drama, sci fi"
+            }
+        )
+
+        self.assertEqual(created.status_code, 201)
+        review_data = created.get_json()["review"]
+        self.assertEqual(review_data["tags"], ["sci fi", "drama"])
+
+        review_id = review_data["id"]
+        retrieved = self.client.get(f"/api/reviews/{review_id}")
+        self.assertEqual(retrieved.status_code, 200)
+        self.assertEqual(
+            retrieved.get_json()["review"]["tags"],
+            ["sci fi", "drama"]
+        )
+
+        listed = self.client.get("/api/reviews")
+        self.assertEqual(listed.status_code, 200)
+        self.assertEqual(
+            listed.get_json()["reviews"][0]["tags"],
+            ["sci fi", "drama"]
+        )
+
+    def test_review_without_tags_has_empty_tag_list(self):
+        created = self.create_review()
+        self.assertEqual(created.status_code, 201)
+        self.assertEqual(created.get_json()["review"]["tags"], [])
+
+    def test_invalid_tags_rejected_without_creating_review(self):
+        response = self.client.post(
+            "/api/reviews",
+            json={
+                "media_id": "1",
+                "rating": 4.5,
+                "text": "Great movie.",
+                "tags": "Drama,,Comedy"
+            }
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(len(app_module.reviews), 0)
+
+    def test_combined_character_limit_enforced_by_api(self):
+        response = self.client.post(
+            "/api/reviews",
+            json={
+                "media_id": "1",
+                "rating": 4.5,
+                "text": "x" * 5000,
+                "tags": "drama"
+            }
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(len(app_module.reviews), 0)
+
+    def test_unauthenticated_tagged_review_is_rejected(self):
+        anonymous = app_module.app.test_client()
+        response = anonymous.post(
+            "/api/reviews",
+            json={
+                "media_id": "1",
+                "rating": 4.5,
+                "text": "Not logged in.",
+                "tags": "drama"
+            }
+        )
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(len(app_module.reviews), 0)
+
+    def test_forged_user_id_does_not_change_tagged_review_owner(self):
+        created = self.client.post(
+            "/api/reviews",
+            json={
+                "user_id": 999,
+                "media_id": "1",
+                "rating": 4.5,
+                "text": "Review with tags.",
+                "tags": "drama"
+            }
+        )
+        self.assertEqual(created.status_code, 201)
+        self.assertEqual(created.get_json()["review"]["user_id"], 1)
+
 
 if __name__ == "__main__":
     unittest.main()
