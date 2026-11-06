@@ -47,3 +47,14 @@ jobs:
       - name: Deploy to staging
         id: deployment
         uses: actions/deploy-pages@v4
+
+      - name: Set up Python for smoke test
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Verify staging deployment
+        env:
+          STAGING_URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          python scripts/check_staging.py --url "$STAGING_URL"
