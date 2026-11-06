@@ -137,3 +137,93 @@ test("frontend search recovers after a mocked HTTP 500 response", async () => {
         "Darkest Hour"
     );
 });
+
+test("frontend search clears stale results after a network failure and recovers", async () => {
+    const elements = {
+        ".hero-search": createElement(),
+        "media-search": createElement(),
+        "search-results": createElement(),
+        "search-results-grid": createElement(),
+        "genre-filter": createElement(),
+        "media-type-filter": createElement(),
+        "sort-filter": createElement()
+    };
+
+    elements["media-search"].value = "dark";
+
+    let requestCount = 0;
+
+    async function mockFetch() {
+        requestCount++;
+
+        if (requestCount === 2) {
+            throw new Error("Network disconnected");
+        }
+
+        return {
+            ok: true,
+            json: async () => ({
+                results: [{
+                    id: String(requestCount),
+                    title: requestCount === 1 ? "Old Result" : "New Result",
+                    type: "movie",
+                    releaseYear: 2020
+                }]
+            })
+        };
+    }
+
+    const document = {
+        querySelector: (selector) => elements[selector],
+        getElementById: (id) => elements[id],
+        createElement
+    };
+
+    const window = {
+        location: {
+            hostname: "127.0.0.1",
+            protocol: "http:",
+            origin: "http://127.0.0.1:5500"
+        }
+    };
+
+    runInNewContext(appCode, {
+        window,
+        document,
+        fetch: mockFetch,
+        URLSearchParams,
+        console: { error() {} }
+    });
+
+    const form = elements[".hero-search"];
+    const grid = elements["search-results-grid"];
+    const section = elements["search-results"];
+    const event = { preventDefault() {} };
+
+    await form.submit(event);
+
+    assert.equal(grid.children.length, 1);
+    assert.equal(
+        grid.children[0].children[1].children[0].textContent,
+        "Old Result"
+    );
+
+    await form.submit(event);
+
+    assert.equal(grid.children.length, 0);
+    assert.equal(
+        grid.textContent,
+        "Unable to load search results. Please try again."
+    );
+    assert.equal(section.hidden, false);
+
+    await form.submit(event);
+
+    assert.equal(requestCount, 3);
+    assert.equal(grid.children.length, 1);
+    assert.equal(grid.textContent, "");
+    assert.equal(
+        grid.children[0].children[1].children[0].textContent,
+        "New Result"
+    );
+});
