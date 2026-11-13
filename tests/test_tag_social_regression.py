@@ -2,6 +2,7 @@
 """FC4G6-295: Regression tests across Review Tags and Tag Following APIs."""
 
 import unittest
+from unittest.mock import patch
 
 from backend import app as app_module
 from backend.tag_follow_api import tag_follows
@@ -9,6 +10,28 @@ from backend.tag_follow_api import tag_follows
 
 class TagSocialRegressionTests(unittest.TestCase):
     def setUp(self):
+        self.media_lookup_patch = patch.object(
+            app_module,
+            "get_media_by_id",
+            side_effect=lambda media_id: {
+                "1": {"id": "1", "title": "The Dark Knight"},
+                "2": {"id": "2", "title": "Dark"}
+            }.get(str(media_id))
+        )
+        self.media_titles_patch = patch.object(
+            app_module,
+            "load_media_titles",
+            side_effect=lambda media_ids: {
+                str(media_id): title
+                for media_id, title in (
+                    ("1", "The Dark Knight"),
+                    ("2", "Dark")
+                )
+                if str(media_id) in {str(value) for value in media_ids}
+            }
+        )
+        self.media_lookup_patch.start()
+        self.media_titles_patch.start()
         self.old_secret_key = app_module.app.config.get("SECRET_KEY")
         self.old_testing = app_module.app.config.get("TESTING")
 
@@ -31,6 +54,8 @@ class TagSocialRegressionTests(unittest.TestCase):
 
         app_module.app.config["SECRET_KEY"] = self.old_secret_key
         app_module.app.config["TESTING"] = self.old_testing
+        self.media_titles_patch.stop()
+        self.media_lookup_patch.stop()
 
     def login_as(self, user_id):
         with self.client.session_transaction() as current_session:

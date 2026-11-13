@@ -2,6 +2,7 @@
 """FC4G6-74: Filter and browse reviews by their normalized tags."""
 
 import unittest
+from unittest.mock import patch
 
 from backend import app as app_module
 from backend.review import Review
@@ -10,6 +11,15 @@ from backend.review import Review
 class ReviewTagFilterTests(unittest.TestCase):
 
     def setUp(self):
+        self.media_titles_patch = patch.object(
+            app_module,
+            "load_media_titles",
+            return_value={
+                "1": "The Dark Knight",
+                "2": "Dark"
+            }
+        )
+        self.media_titles_patch.start()
         app_module.app.config.update(TESTING=True)
         self.client = app_module.app.test_client()
 
@@ -38,6 +48,7 @@ class ReviewTagFilterTests(unittest.TestCase):
     def tearDown(self):
         app_module.reviews.clear()
         app_module.next_review_id = 1
+        self.media_titles_patch.stop()
 
     def get_filtered(self, **filters):
         response = self.client.get(

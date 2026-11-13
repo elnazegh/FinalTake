@@ -1,9 +1,54 @@
+import os
 import unittest
-from app import app
+from pathlib import Path
 from unittest.mock import patch
-from favorite import Favorites
 
+import mysql.connector
+
+from app import app
+from favorite import Favorites
+from seed_media import seed_demo_media
+
+
+@unittest.skipUnless(
+    os.getenv("RUN_MYSQL_INTEGRATION_TESTS") == "1",
+    "Requires isolated CI MySQL test database",
+)
 class SearchApiTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        if os.getenv("DB_NAME") != "finaltake_ci_test":
+            raise RuntimeError(
+                "Search integration tests require DB_NAME=finaltake_ci_test"
+            )
+
+        connection = mysql.connector.connect(
+            host=os.environ["DB_HOST"],
+            user=os.environ["DB_USER"],
+            password=os.environ["DB_PASSWORD"],
+            database=os.environ["DB_NAME"]
+        )
+
+        try:
+            cursor = connection.cursor()
+            try:
+                schema_path = Path(__file__).with_name("schema.sql")
+
+                for statement in schema_path.read_text().split(";"):
+                    statement = statement.strip()
+
+                    if statement:
+                        cursor.execute(statement)
+
+                connection.commit()
+            finally:
+                cursor.close()
+
+            seed_demo_media(connection)
+
+        finally:
+            connection.close()
+
     def test_oversized_search_query(self):
         response = self.client.get(
             "/api/search",
@@ -401,11 +446,10 @@ class SearchApiTests(unittest.TestCase):
         self.assertIn(selected["id"], favorites.get_favorites())
 
     def test_unexpected_search_error_does_not_expose_internal_details(self):
-        class FailingMedia:
-            def __getitem__(self, key):
-                raise RuntimeError("private-search-backend-detail")
-
-        with patch("app.media_items", [FailingMedia()]):
+        with patch(
+            "app.get_db_connection",
+            side_effect=RuntimeError("private-search-backend-detail")
+        ):
             with patch.dict(app.config, {
                 "TESTING": False,
                 "DEBUG": False,
@@ -422,6 +466,7 @@ class SearchApiTests(unittest.TestCase):
 
         self.assertNotIn("private-search-backend-detail", body)
         self.assertNotIn("Traceback", body)
+        self.assertIn("Unable to search media catalog.", body)
 
 if __name__ == "__main__":
     unittest.main()

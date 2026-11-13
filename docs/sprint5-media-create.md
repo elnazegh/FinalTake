@@ -1,7 +1,7 @@
 # Media Catalog Management - Create Media
 
-This change adds the Create operation only. Read, Update and Delete are
-delivered in separate pull requests.
+Create and Read are delivered as separate pull requests. Update and Delete
+remain out of scope.
 
 ## API
 
@@ -59,23 +59,39 @@ Open `frontend/pages/add-media.html` while logged in as a media manager. The
 Add Media link on the home page appears only for media managers. Anonymous
 users and non-managers see a notice instead of the form.
 
-## Known limitation until Read Media (PR 2)
+## Read Media (PR 2)
 
-Search (`GET /api/search`) and media details (`GET /api/media/<id>`) still read
-the hardcoded in-memory catalog in `backend/app.py`. They do not read the
-`media` table yet, so newly created media is stored in MySQL but does not
-appear in search results or on a details page. For the same reason the form
-confirms creation and shows the new media ID instead of redirecting to a
-details page. Database-backed Read will be added in PR 2.
+`GET /api/media`, `GET /api/media/<id>`, and `GET /api/search` read from the
+MySQL `media` table. Search and details retain their existing response shapes,
+so newly created media appears through the existing search and details
+interface after the demo catalog has been seeded.
 
-Notes for the next PRs:
+- `GET /api/media` returns `{"media": [...]}`.
+- `GET /api/media/<id>` returns the media object directly, or 404 when absent.
+- `GET /api/search` returns `{"results": [...]}` and supports `query`, `genre`,
+  `media_type`, and the existing title/year sort options.
 
-- Created IDs start at 1 and can numerically overlap the hardcoded demo items
-  (IDs 1 to 5). PR 2 should seed or migrate those items when switching reads
-  to MySQL.
-- API IDs are strings (for example `"7"`) to match the existing catalog, while
-  the column is `INT AUTO_INCREMENT`.
-- Reviews are still held in memory and refer to media by ID. PR 4 (Delete)
-  should decide how reviews of a deleted item are handled.
-- `image_url` is validated as http or https on write. Pages that render it
-  should still treat it as untrusted.
+Before switching an existing database to the Read endpoints, run the schema
+and seed steps below. The seed is explicit and is never run as part of a
+normal application request.
+
+```powershell
+cd backend
+python seed_media.py
+```
+
+The script inserts the five legacy records with IDs 1–5 only when those IDs
+are free and no matching title/type record exists under another ID. Re-running
+it against the same seeded catalog inserts nothing. If an ID or title/type
+conflict is found, it reports the conflict and makes no changes. Back up the
+database and resolve the conflict manually before retrying; do not overwrite
+or delete a record to force the seed through.
+
+The MySQL `media` table is the source of truth after seeding. Reviews,
+ratings and favorites remain in memory and are not made persistent by Read.
+They retain media IDs as strings; keeping the legacy IDs stable is important
+for their current in-process references and existing tests. PR 4 (Delete)
+should decide how reviews of deleted media are handled.
+
+`image_url` is validated as http or https on write. Pages that render it
+should still treat it as untrusted.
