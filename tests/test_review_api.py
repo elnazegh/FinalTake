@@ -1,5 +1,7 @@
 
 import unittest
+from unittest.mock import MagicMock
+from unittest.mock import patch
 
 from backend import app as app_module
 
@@ -17,12 +19,55 @@ class ReviewApiTests(unittest.TestCase):
 
         app_module.reviews.clear()
         app_module.next_review_id = 1
+        self.test_media = {
+            "1": {
+                "id": "1",
+                "title": "The Dark Knight"
+            },
+            "2": {
+                "id": "2",
+                "title": "Dark"
+            }
+        }
+        self.media_lookup_patch = patch.object(
+            app_module,
+            "get_media_by_id",
+            side_effect=lambda media_id: self.test_media.get(str(media_id))
+        )
+        self.media_titles_patch = patch.object(
+            app_module,
+            "load_media_titles",
+            side_effect=lambda media_ids: {
+                str(media_id): self.test_media[str(media_id)]["title"]
+                for media_id in media_ids
+                if str(media_id) in self.test_media
+            }
+        )
+        self.database_connection_patch = patch.object(
+            app_module,
+            "get_db_connection",
+            return_value=MagicMock()
+        )
+        self.get_media_patch = patch.object(
+            app_module,
+            "get_media",
+            side_effect=lambda connection, media_id:
+                self.test_media.get(str(media_id))
+        )
+        self.media_lookup_patch.start()
+        self.media_titles_patch.start()
+        self.database_connection_patch.start()
+        self.get_media_patch.start()
 
         # Simulate an authenticated review owner.
         with self.client.session_transaction() as sess:
             sess["user_id"] = 1
 
     def tearDown(self):
+        self.get_media_patch.stop()
+        self.database_connection_patch.stop()
+        self.media_titles_patch.stop()
+        self.media_lookup_patch.stop()
         app_module.app.config["SECRET_KEY"] = self.original_secret_key
 
     def create_review(
