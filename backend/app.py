@@ -16,12 +16,18 @@ from urllib.parse import urlencode
 # and importing backend.app from the automated tests.
 try:
     from .database import get_db_connection
+    from .media import create_media_record
+    from .media import user_can_manage_media
+    from .media import validate_media_payload
     from .rating import Rating
     from .review import Review
     from .tag import normalize_tags
     from .tag_follow_api import tag_follow_bp
 except ImportError:
     from database import get_db_connection
+    from media import create_media_record
+    from media import user_can_manage_media
+    from media import validate_media_payload
     from rating import Rating
     from review import Review
     from tag import normalize_tags
@@ -257,6 +263,89 @@ def get_media_details(media_id):
         }), 404
 
     return jsonify(media), 200
+
+
+# --------------------------------------------------
+# Media management routes
+# --------------------------------------------------
+
+@app.route("/api/media/permissions", methods=["GET"])
+def get_media_permissions():
+    """Tell the frontend whether to show media management controls."""
+    user_id = session.get("user_id")
+
+    if user_id is None:
+        return jsonify({
+            "canManageMedia": False
+        }), 200
+
+    try:
+        connection = get_db_connection()
+
+        try:
+            can_manage = user_can_manage_media(connection, user_id)
+
+        finally:
+            connection.close()
+
+    except Exception:
+        app.logger.exception("Media permission check failed")
+
+        return jsonify({
+            "error": "Unable to check media permissions."
+        }), 500
+
+    return jsonify({
+        "canManageMedia": can_manage
+    }), 200
+
+
+@app.route("/api/media", methods=["POST"])
+def create_media():
+    user_id = session.get("user_id")
+
+    if user_id is None:
+        return jsonify({
+            "error": "Authentication required."
+        }), 401
+
+    data = request.get_json(silent=True)
+
+    try:
+        connection = get_db_connection()
+
+        try:
+            # Authorization is enforced here, independent of the frontend.
+            if not user_can_manage_media(connection, user_id):
+                return jsonify({
+                    "error": "You do not have permission to manage media."
+                }), 403
+
+            try:
+                media_data = validate_media_payload(data)
+
+            except ValueError as error:
+                return jsonify({
+                    "error": str(error)
+                }), 400
+
+            media = create_media_record(connection, media_data)
+
+        finally:
+            connection.close()
+
+    except Exception:
+        app.logger.exception("Media creation failed")
+
+        return jsonify({
+            "error": "Unable to create media item."
+        }), 500
+
+    return jsonify({
+        "message": "Media created successfully.",
+        "id": media["id"],
+        "media": media
+    }), 201
 
 
 # --------------------------------------------------
