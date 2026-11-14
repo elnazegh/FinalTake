@@ -20,6 +20,7 @@ try:
     from .media import get_media
     from .media import list_media
     from .media import search_media
+    from .media import update_media_record
     from .media import user_can_manage_media
     from .media import validate_media_payload
     from .rating import Rating
@@ -32,6 +33,7 @@ except ImportError:
     from media import get_media
     from media import list_media
     from media import search_media
+    from media import update_media_record
     from media import user_can_manage_media
     from media import validate_media_payload
     from rating import Rating
@@ -379,6 +381,36 @@ def create_media():
         "id": media["id"],
         "media": media
     }), 201
+
+
+@app.route("/api/media/<int:media_id>", methods=["PATCH"])
+def update_media(media_id):
+    user_id = session.get("user_id")
+    if user_id is None:
+        return jsonify({"error": "Authentication required."}), 401
+
+    data = request.get_json(silent=True)
+    try:
+        connection = get_db_connection()
+        try:
+            if not user_can_manage_media(connection, user_id):
+                return jsonify({
+                    "error": "You do not have permission to manage media."
+                }), 403
+
+            try:
+                media = update_media_record(connection, media_id, data)
+            except ValueError as error:
+                return jsonify({"error": str(error)}), 400
+        finally:
+            connection.close()
+    except Exception:
+        app.logger.exception("Media update failed")
+        return jsonify({"error": "Unable to update media item."}), 500
+
+    if media is None:
+        return jsonify({"error": "Media not found."}), 404
+    return jsonify(media), 200
 
 
 # --------------------------------------------------

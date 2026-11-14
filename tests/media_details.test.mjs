@@ -10,7 +10,7 @@ const script = readFileSync(
 );
 
 // Run the actual frontend JavaScript with simulated API responses.
-async function runMediaDetails(search, response) {
+async function runMediaDetails(search, response, canManageMedia = false) {
     const container = {
         textContent: "",
         children: [],
@@ -28,6 +28,7 @@ async function runMediaDetails(search, response) {
     };
 
     let requestedUrl;
+    const editLink = { hidden: true };
 
     const context = {
         window: {
@@ -41,7 +42,7 @@ async function runMediaDetails(search, response) {
         URLSearchParams,
 
         document: {
-            getElementById: () => container,
+            getElementById: (id) => id === "media-details" ? container : editLink,
             createElement: (tagName) => ({
                 tagName,
                 textContent: ""
@@ -49,6 +50,12 @@ async function runMediaDetails(search, response) {
         },
 
         fetch: async (url) => {
+            if (url.endsWith("/permissions")) {
+                return {
+                    ok: true,
+                    json: async () => ({ canManageMedia })
+                };
+            }
             requestedUrl = url;
 
             // Simulate a network failure when an Error is provided.
@@ -71,7 +78,7 @@ async function runMediaDetails(search, response) {
     // Allow the asynchronous details request to finish.
     await new Promise((resolve) => setImmediate(resolve));
 
-    return { container, requestedUrl };
+    return { container, requestedUrl, editLink };
 }
 
 test("HTTP 404 displays Media not found", async () => {
@@ -89,6 +96,19 @@ test("HTTP 404 displays Media not found", async () => {
         result.container.textContent,
         "Media not found."
     );
+});
+
+test("Edit control is shown only to media managers", async () => {
+    const response = {
+        ok: true,
+        status: 200,
+        json: async () => ({ id: "42", title: "Demo", type: "movie" })
+    };
+    const manager = await runMediaDetails("?id=42", response, true);
+    const visitor = await runMediaDetails("?id=42", response, false);
+    assert.equal(manager.editLink.hidden, false);
+    assert.equal(manager.editLink.href, "edit-media.html?id=42");
+    assert.equal(visitor.editLink.hidden, true);
 });
 
 
