@@ -78,6 +78,7 @@ def list_media(connection):
             f"""
             SELECT {MEDIA_COLUMNS}
             FROM media
+            WHERE deleted_at IS NULL
             ORDER BY {DEFAULT_SORT_ORDER}
             """
         )
@@ -88,7 +89,7 @@ def list_media(connection):
         cursor.close()
 
 
-def get_media(connection, media_id):
+def get_media(connection, media_id, *, include_deleted=False):
     media_id = normalize_media_id(media_id)
 
     if media_id is None:
@@ -97,11 +98,12 @@ def get_media(connection, media_id):
     cursor = connection.cursor(dictionary=True)
 
     try:
+        visibility = "" if include_deleted else " AND deleted_at IS NULL"
         cursor.execute(
             f"""
             SELECT {MEDIA_COLUMNS}
             FROM media
-            WHERE media_id = %s
+            WHERE media_id = %s{visibility}
             """,
             (media_id,)
         )
@@ -117,7 +119,7 @@ def escape_like(value):
 
 
 def search_media(connection, query, genre="", media_type="", sort=""):
-    conditions = ["LOWER(title) LIKE LOWER(%s) ESCAPE '!'"]
+    conditions = ["deleted_at IS NULL", "LOWER(title) LIKE LOWER(%s) ESCAPE '!'"]
     parameters = [f"%{escape_like(query)}%"]
 
     if genre:
@@ -331,7 +333,8 @@ def update_media_record(connection, media_id, data):
     cursor = connection.cursor(dictionary=True)
     try:
         cursor.execute(
-            "SELECT media_id FROM media WHERE media_id = %s FOR UPDATE",
+            "SELECT media_id FROM media "
+            "WHERE media_id = %s AND deleted_at IS NULL FOR UPDATE",
             (media_id,)
         )
         if cursor.fetchone() is None:
@@ -355,3 +358,28 @@ def update_media_record(connection, media_id, data):
         raise
     finally:
         cursor.close()
+
+
+def delete_media_record(connection, media_id):
+    """Atomically mark an active media record as deleted."""
+    media_id = normalize_media_id(media_id)
+    if media_id is None:
+        return False
+
+    cursor = None
+    try:
+        cursor = connection.cursor()
+        cursor.execute(
+            "UPDATE media SET deleted_at = CURRENT_TIMESTAMP "
+            "WHERE media_id = %s AND deleted_at IS NULL",
+            (media_id,)
+        )
+        deleted = cursor.rowcount == 1
+        connection.commit()
+        return deleted
+    except Exception:
+        connection.rollback()
+        raise
+    finally:
+        if cursor is not None:
+            cursor.close()
