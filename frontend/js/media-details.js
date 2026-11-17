@@ -34,9 +34,14 @@ function renderMediaDetails(media) {
     const imageContainer = document.createElement("div");
     imageContainer.className = "media-image-container";
 
-    if (media.imageUrl) {
+    const posterUrl =
+  String(mediaId) === "1"
+    ? "../images/dark-knight.jpeg"
+    : media.imageUrl;
+
+if (posterUrl) {
         const image = document.createElement("img");
-        image.src = media.imageUrl;
+        image.src = posterUrl;
         image.alt = `Poster or cover for ${media.title || "media"}`;
         image.className = "media-details-image";
 
