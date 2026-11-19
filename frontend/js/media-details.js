@@ -34,25 +34,39 @@ function renderMediaDetails(media) {
     const imageContainer = document.createElement("div");
     imageContainer.className = "media-image-container";
 
-    const posterUrl =
-  String(mediaId) === "1"
-    ? "../images/dark-knight.jpeg"
-    : media.imageUrl;
+    
+const fallbackPoster =
+    String(mediaId) === "1"
+        ? "../images/dark-knight.jpeg"
+        : null;
+
+const posterUrl = media.imageUrl || fallbackPoster;
 
 if (posterUrl) {
-        const image = document.createElement("img");
-        image.src = posterUrl;
-        image.alt = `Poster or cover for ${media.title || "media"}`;
-        image.className = "media-details-image";
+    const image = document.createElement("img");
+    image.src = posterUrl;
+    image.alt = `Poster or cover for ${media.title || "media"}`;
+    image.className = "media-details-image";
 
-        image.onerror = () => {
+    image.onerror = () => {
+        const fallbackUrl = fallbackPoster
+            ? new URL(fallbackPoster, window.location.href).href
+            : null;
+
+        if (fallbackUrl && image.src !== fallbackUrl) {
+            image.src = fallbackPoster;
+        } else {
+            image.onerror = null;
+            image.remove();
             imageContainer.textContent = "Image unavailable";
-        };
+        }
+    };
 
-        imageContainer.appendChild(image);
-    } else {
-        imageContainer.textContent = "Image unavailable";
-    }
+    imageContainer.appendChild(image);
+} else {
+    imageContainer.textContent = "Image unavailable";
+}
+
 
     detailsContainer.appendChild(title);
     detailsContainer.appendChild(imageContainer);
