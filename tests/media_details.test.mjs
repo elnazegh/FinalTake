@@ -126,6 +126,14 @@ test("HTTP 200 displays the correct media details", async () => {
             "No description available."
         ]
     );
+    const posterContainer = result.container.children[1];
+
+    assert.equal(posterContainer.children.length, 1);
+    assert.equal(posterContainer.children[0].tagName, "img");
+    assert.equal(
+        posterContainer.children[0].src,
+        "../images/dark-knight.jpeg"
+    );
 });
 
 
