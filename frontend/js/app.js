@@ -1,8 +1,10 @@
 const API_BASE_URL =
-    window.location.hostname === "127.0.0.1" ||
-    window.location.hostname === "localhost"
-        ? `${window.location.protocol}//${window.location.hostname}:5000`
-        : window.location.origin;
+    window.FINALTAKE_API_BASE_URL ||
+    (
+        ["localhost", "127.0.0.1"].includes(window.location.hostname)
+            ? `${window.location.protocol}//${window.location.hostname}:5000`
+            : window.location.origin
+    );
 const searchForm = document.querySelector(".hero-search");
 const searchInput = document.getElementById("media-search");
 const searchResultsSection = document.getElementById("search-results");
