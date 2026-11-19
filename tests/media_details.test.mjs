@@ -10,7 +10,7 @@ const script = readFileSync(
 );
 
 // Run the actual frontend JavaScript with simulated API responses.
-async function runMediaDetails(search, response) {
+async function runMediaDetails(search, response, apiBaseUrl) {
     const container = {
         textContent: "",
         children: [],
@@ -31,6 +31,7 @@ async function runMediaDetails(search, response) {
 
     const context = {
         window: {
+            FINALTAKE_API_BASE_URL: apiBaseUrl,
             location: {
                 hostname: "127.0.0.1",
                 protocol: "http:",
@@ -153,5 +154,18 @@ test("network failure displays a generic error message", async () => {
     assert.equal(
         result.container.children.length,
         0
+    );
+});
+
+test("media details uses configured API base URL on staging", async () => {
+    const result = await runMediaDetails(
+        "?id=1",
+        { ok: false, status: 404 },
+        "https://api.example.com"
+    );
+
+    assert.equal(
+        result.requestedUrl,
+        "https://api.example.com/api/media/1"
     );
 });

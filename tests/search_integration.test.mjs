@@ -417,3 +417,56 @@ test("empty search clears old results and later search restores media links", as
         "Darkest Hour"
     );
 });
+
+test("search uses configured API base URL on staging", async () => {
+    const elements = {
+        ".hero-search": createElement(),
+        "media-search": createElement(),
+        "search-results": createElement(),
+        "search-results-grid": createElement(),
+        "genre-filter": createElement(),
+        "media-type-filter": createElement(),
+        "sort-filter": createElement()
+    };
+
+    elements["media-search"].value = "dark";
+
+    let requestedUrl;
+
+    const window = {
+        FINALTAKE_API_BASE_URL: "https://api.example.com",
+        location: {
+            hostname: "elnazegh.github.io",
+            protocol: "https:",
+            origin: "https://elnazegh.github.io"
+        }
+    };
+
+    runInNewContext(appCode, {
+        window,
+        document: {
+            querySelector: (selector) => elements[selector],
+            getElementById: (id) => elements[id],
+            createElement
+        },
+        fetch: async (url) => {
+            requestedUrl = url;
+            return {
+                ok: true,
+                json: async () => ({ results: [] })
+            };
+        },
+        URLSearchParams,
+        console: { error() {} }
+    });
+
+    await elements[".hero-search"].submit({
+        preventDefault() {}
+    });
+
+    const url = new URL(requestedUrl);
+
+    assert.equal(url.origin, "https://api.example.com");
+    assert.equal(url.pathname, "/api/search");
+    assert.equal(url.searchParams.get("query"), "dark");
+});
