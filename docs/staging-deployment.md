@@ -1,19 +1,41 @@
 # Automatic Staging Deployment (FC4G6-370)
 
-Workflow file: `.github/workflows/staging.yml` (name: **Deploy Staging**).
+Workflow: `.github/workflows/staging.yml` (`Deploy Staging`).
 
-- Triggers when **FinalTake CI** completes successfully for a push to `main`. Failed CI runs and pull request runs never deploy. It can also be started manually with `workflow_dispatch`.
-- Checks out the exact commit that passed CI and publishes `frontend/` to GitHub Pages under the `staging` environment. The deployment URL appears on the workflow run and in the repository's Environments list.
-- Only the static frontend is deployed. The Flask backend and MySQL are not hosted, so search, sign-up and login do not work on the staging site.
+## Deployment Configuration
 
-## One-time setup (repository admin)
+- Runs automatically after `FinalTake CI` succeeds on a push to `main`.
+- Can also be triggered manually using `workflow_dispatch`. Manual runs are not gated by a preceding successful CI run.
+- Checks out the commit associated with the successful CI run for automatic deployments.
+- Publishes the `frontend/` directory to GitHub Pages.
+- Uses the GitHub Actions `staging` environment.
 
-Settings > Pages > Build and deployment > Source: **GitHub Actions**. Until that is enabled the deploy job fails; CI itself is unaffected because staging is a separate workflow.
+Staging URL: https://elnazegh.github.io/FinalTake/
 
-## Status
+## Repository Setup
 
-This workflow has not run yet. It starts working after it is merged to `main` and Pages is enabled. The `workflow_run` trigger only fires from the copy of the workflow on the default branch, so it cannot be exercised from a pull request.
+GitHub Pages must use **GitHub Actions** as its deployment source under Settings > Pages > Build and deployment.
 
-## Not yet implemented
+## Verified Deployment Status
 
-- Hosting for the backend and database in staging.
+As of November 18, 2026:
+
+- GitHub Actions shows 18 staging workflow runs.
+- The latest run, #18, completed successfully on November 5, 2026.
+- Run #18 deployed commit `762a17c`.
+- The staging homepage was confirmed accessible on November 18, 2026.
+- The navigation menu and search, filtering, and sorting controls were visible.
+
+## Verified Limitations
+
+- The staging workflow deploys only the static frontend.
+- The Flask backend and MySQL database are not hosted by this workflow.
+- A search for "Dark" on November 18, 2026 displayed: "Unable to load search results. Please try again."
+- End-to-end search and authentication functionality cannot be confirmed through the current static deployment alone.
+
+## Deployment Evidence
+
+- Successful staging workflow:
+  https://github.com/elnazegh/FinalTake/actions/runs/42150222238
+- Successful deployment #18: November 5, 2026.
+- Staging homepage and search-error screenshots: November 18, 2026.
