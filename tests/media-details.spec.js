@@ -51,6 +51,12 @@ test("Displays media description and image from API", async ({ page }) => {
 
   await expect(image).toBeVisible();
 
+  // Verify that the API-provided image takes priority.
+await expect(image).toHaveAttribute(
+  "src",
+  "/frontend/images/test-poster.png"
+);
+
   // Verify that the image actually loaded.
   await expect.poll(async () =>
     image.evaluate((img) => img.complete && img.naturalWidth > 0)

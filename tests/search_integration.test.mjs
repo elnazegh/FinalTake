@@ -342,6 +342,140 @@ test("latest search results remain visible when responses arrive out of order", 
         "Dune"
     );
 });
+test("empty search clears old results and later search restores media links", async () => {
+    const elements = {
+        ".hero-search": createElement(),
+        "media-search": createElement(),
+        "search-results": createElement(),
+        "search-results-grid": createElement(),
+        "genre-filter": createElement(),
+        "media-type-filter": createElement(),
+        "sort-filter": createElement()
+    };
+
+    const responses = [
+        [{ id: 1, title: "The Dark Knight", type: "movie", releaseYear: 2008 }],
+        [],
+        [{ id: 3, title: "Darkest Hour", type: "movie", releaseYear: 2017 }]
+    ];
+
+    let requestCount = 0;
+
+    async function mockFetch() {
+        const results = responses[requestCount++];
+        return {
+            ok: true,
+            json: async () => ({ results })
+        };
+    }
+
+    const document = {
+        querySelector: (selector) => elements[selector],
+        getElementById: (id) => elements[id],
+        querySelectorAll: () => [],
+        createElement
+    };
+
+    const window = {
+        location: {
+            hostname: "127.0.0.1",
+            protocol: "http:",
+            origin: "http://127.0.0.1:5500"
+        }
+    };
+
+    runInNewContext(appCode, {
+        window,
+        document,
+        fetch: mockFetch,
+        URLSearchParams,
+        console: { error() {} }
+    });
+
+    const form = elements[".hero-search"];
+    const grid = elements["search-results-grid"];
+    const event = { preventDefault() {} };
+
+    elements["media-search"].value = "dark";
+    await form.submit(event);
+
+    assert.equal(grid.children.length, 1);
+    assert.equal(grid.children[0].href, "pages/media-details.html?id=1");
+
+    elements["media-search"].value = "nonexistent";
+    await form.submit(event);
+
+    assert.equal(grid.children.length, 0);
+    assert.equal(grid.textContent, "No results found.");
+    assert.equal(elements["search-results"].hidden, false);
+
+    elements["media-search"].value = "darkest";
+    await form.submit(event);
+
+    assert.equal(requestCount, 3);
+    assert.equal(grid.children.length, 1);
+    assert.equal(grid.textContent, "");
+    assert.equal(grid.children[0].href, "pages/media-details.html?id=3");
+    assert.equal(
+        grid.children[0].children[1].children[0].textContent,
+        "Darkest Hour"
+    );
+});
+
+test("search uses configured API base URL on staging", async () => {
+    const elements = {
+        ".hero-search": createElement(),
+        "media-search": createElement(),
+        "search-results": createElement(),
+        "search-results-grid": createElement(),
+        "genre-filter": createElement(),
+        "media-type-filter": createElement(),
+        "sort-filter": createElement()
+    };
+
+    elements["media-search"].value = "dark";
+
+    let requestedUrl;
+
+    const window = {
+        FINALTAKE_API_BASE_URL: "https://api.example.com",
+        location: {
+            hostname: "elnazegh.github.io",
+            protocol: "https:",
+            origin: "https://elnazegh.github.io"
+        }
+    };
+
+    runInNewContext(appCode, {
+        window,
+        document: {
+            querySelector: (selector) => elements[selector],
+            getElementById: (id) => elements[id],
+            querySelectorAll: () => [],
+            createElement
+        },
+        fetch: async (url) => {
+            requestedUrl = url;
+            return {
+                ok: true,
+                json: async () => ({ results: [] })
+            };
+        },
+        URLSearchParams,
+        console: { error() {} }
+    });
+
+    await elements[".hero-search"].submit({
+        preventDefault() {}
+    });
+
+    const url = new URL(requestedUrl);
+
+    assert.equal(url.origin, "https://api.example.com");
+    assert.equal(url.pathname, "/api/search");
+    assert.equal(url.searchParams.get("query"), "dark");
+});
+
 test("Trending browse links search the selected media category", async () => {
     const elements = {
         ".hero-search": createElement(),

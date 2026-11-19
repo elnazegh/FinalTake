@@ -874,3 +874,237 @@ select:focus-visible {
 [hidden] {
   display: none !important;
 }
+
+/* =========================================
+   FinalTake - Media Details & Reviews UI
+   Scoped to media details page only
+   ========================================= */
+
+.media-details-page {
+  padding: 48px 20px;
+  align-items: flex-start;
+}
+
+.media-details-page .media-details-card {
+  width: 100%;
+  max-width: 850px;
+  padding: 40px;
+  border-radius: 18px;
+}
+
+/* Media information */
+
+.media-details-page #media-details h1 {
+  font-size: clamp(28px, 4vw, 38px);
+  color: #ffffff;
+  margin: 16px 0 22px;
+  line-height: 1.2;
+}
+
+.media-details-page #media-details > p {
+  margin-bottom: 10px;
+  color: #cbd5e1;
+}
+
+.media-details-page .media-image-container {
+  max-width: 240px;
+  min-height: 230px;
+  margin: 20px 0 24px;
+}
+
+/* Write a Review link */
+
+.media-details-page #write-review-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  min-height: 44px;
+  margin: 22px 0 28px;
+  padding: 12px 24px;
+  background: #fbbf24;
+  color: #111827;
+  font-weight: 800;
+  text-decoration: none;
+  border-radius: 9px;
+  transition: background 0.2s ease;
+}
+
+.media-details-page #write-review-link:hover {
+  background: #f59e0b;
+}
+
+/* Reviews section */
+
+.media-details-page #reviews-section {
+  margin-top: 24px;
+  padding-top: 28px;
+  border-top: 1px solid #334155;
+}
+
+.media-details-page #reviews-heading {
+  color: #fbbf24;
+  font-size: 28px;
+  margin-bottom: 22px;
+  text-align: left;
+}
+
+.media-details-page #reviews-list {
+  display: grid;
+  gap: 16px;
+}
+
+.media-details-page #reviews-list .review-card {
+  padding: 24px;
+  border-radius: 14px;
+  background: #172235;
+  border: 1px solid #3b4a61;
+}
+
+.media-details-page #reviews-list .review-card p:first-child {
+  color: #fbbf24;
+  font-size: 18px;
+  font-weight: 800;
+  margin-bottom: 12px;
+}
+
+.media-details-page #reviews-list .review-card p {
+  line-height: 1.7;
+}
+
+/* Edit and Delete buttons */
+
+.media-details-page .review-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.media-details-page .review-actions button {
+  width: auto;
+  min-width: 100px;
+  padding: 10px 18px;
+  font-size: 14px;
+  border-radius: 8px;
+}
+
+.media-details-page .review-actions button:first-child {
+  background: #fbbf24;
+  color: #111827;
+}
+
+.media-details-page .review-actions button:last-child {
+  background: transparent;
+  border: 1px solid #64748b;
+  color: #e2e8f0;
+}
+
+.media-details-page .review-actions button:last-child:hover {
+  background: #334155;
+}
+
+/* Mobile */
+
+@media (max-width: 600px) {
+  .media-details-page {
+    padding: 24px 12px;
+  }
+
+  .media-details-page .media-details-card {
+    padding: 24px 18px;
+  }
+
+  .media-details-page #write-review-link {
+    width: 100%;
+  }
+
+  .media-details-page .review-actions button {
+    flex: 1;
+  }
+}
+
+/* Media Details Navigation */
+
+.media-details-page .media-navigation {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.media-details-page .media-back-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 16px;
+  border: 1px solid #475569;
+  border-radius: 8px;
+  color: #e2e8f0;
+  background-color: #263449;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+  transition: 0.2s ease;
+}
+
+.media-details-page .media-back-button:hover {
+  border-color: #fbbf24;
+  color: #fbbf24;
+  background-color: #334155;
+}
+
+/* Review Form - Back to Movie Details */
+
+.back-to-media-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 16px;
+  margin-bottom: 24px;
+  background-color: #263449;
+  color: #e2e8f0;
+  border: 1px solid #475569;
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+  transition: 0.2s ease;
+}
+
+.back-to-media-button:hover {
+  background-color: #334155;
+  border-color: #fbbf24;
+  color: #fbbf24;
+}
+
+/* Sprint 5 - Search Result Posters */
+
+#search-results-grid .card-image {
+    height: 260px;
+    min-height: 260px;
+    overflow: hidden;
+    background: #24334a;
+}
+
+#search-results-grid .search-poster {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+}
+
+#search-results-grid .media-card {
+    text-decoration: none;
+}
+
+#search-results-grid .media-card:hover {
+    border-color: #fbbf24;
+}
+
+@media (max-width: 600px) {
+    #search-results-grid .card-image {
+        height: 320px;
+    }
+}
