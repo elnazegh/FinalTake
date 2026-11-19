@@ -97,12 +97,18 @@ reviewForm.addEventListener("submit", async (event) => {
       return;
     }
 
-    reviewMessage.textContent =
-      "Review submitted successfully!";
+    
+reviewMessage.textContent =
+  "Review submitted successfully!";
 
-    reviewForm.reset();
-    reviewCount.textContent =
-      `0 / ${MAX_REVIEW_LENGTH} characters`;
+reviewForm.reset();
+reviewCount.textContent =
+  `0 / ${MAX_REVIEW_LENGTH} characters`;
+
+// Return to the selected movie after successful submission.
+window.location.href =
+  `media-details.html?id=${encodeURIComponent(mediaId)}`;
+
 
   } catch (error) {
     console.error("Review submission failed:", error);

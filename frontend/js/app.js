@@ -29,9 +29,35 @@ function renderSearchResults(results) {
         card.href =
             `pages/media-details.html?id=${encodeURIComponent(media.id)}`;
 
-        const image = document.createElement("div");
-        image.className = "card-image";
+      
+const image = document.createElement("div");
+image.className = "card-image";
+
+const posterImages = {
+    "The Dark Knight": "images/dark-knight.jpeg",
+    "Dark": "images/dark-tv.jpeg",
+    "Darkest Hour": "images/darkest-hour.jpeg",
+    "Dark Souls": "images/dark-souls.jpeg"
+};
+
+const posterUrl = posterImages[media.title] || media.imageUrl;
+
+if (posterUrl) {
+    const poster = document.createElement("img");
+    poster.src = posterUrl;
+    poster.alt = `Poster or cover for ${media.title}`;
+    poster.className = "search-poster";
+
+    poster.onerror = () => {
+        image.replaceChildren();
         image.textContent = media.type;
+    };
+
+    image.appendChild(poster);
+} else {
+    image.textContent = media.type;
+}
+
 
         const content = document.createElement("div");
         content.className = "card-content";
