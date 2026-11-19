@@ -80,6 +80,7 @@ test("frontend search recovers after a mocked HTTP 500 response", async () => {
     const document = {
         querySelector: (selector) => elements[selector],
         getElementById: (id) => elements[id],
+        querySelectorAll: () => [],
         createElement
     };
 
@@ -176,6 +177,7 @@ test("frontend search clears stale results after a network failure and recovers"
     const document = {
         querySelector: (selector) => elements[selector],
         getElementById: (id) => elements[id],
+        querySelectorAll: () => [],
         createElement
     };
 
@@ -254,6 +256,7 @@ test("latest search results remain visible when responses arrive out of order", 
     const document = {
         querySelector: (selector) => elements[selector],
         getElementById: (id) => elements[id],
+        querySelectorAll: () => [],
         createElement
     };
 
@@ -338,4 +341,79 @@ test("latest search results remain visible when responses arrive out of order", 
         grid.children[0].children[1].children[0].textContent,
         "Dune"
     );
+});
+test("Trending browse links search the selected media category", async () => {
+    const elements = {
+        ".hero-search": createElement(),
+        "media-search": createElement(),
+        "search-results": createElement(),
+        "search-results-grid": createElement(),
+        "genre-filter": createElement(),
+        "media-type-filter": createElement(),
+        "sort-filter": createElement()
+    };
+
+    const types = ["movie", "tv", "book", "game"];
+    const links = types.map((type) => ({
+        dataset: { browseType: type },
+        addEventListener(event, handler) {
+            this[event] = handler;
+        }
+    }));
+
+    const requests = [];
+    const submissions = [];
+
+    const form = elements[".hero-search"];
+
+    form.requestSubmit = () => {
+        submissions.push(form.submit({
+            preventDefault() {}
+        }));
+    };
+
+    runInNewContext(appCode, {
+        window: {
+            location: {
+                hostname: "127.0.0.1",
+                protocol: "http:",
+                origin: "http://127.0.0.1:5500"
+            }
+        },
+        document: {
+            querySelector: (selector) => elements[selector],
+            getElementById: (id) => elements[id],
+            querySelectorAll: () => links,
+            createElement
+        },
+        fetch: async (url) => {
+            requests.push(url);
+            return {
+                ok: true,
+                json: async () => ({ results: [] })
+            };
+        },
+        URLSearchParams,
+        console: { error() {} }
+    });
+
+    for (let i = 0; i < links.length; i++) {
+        elements["media-search"].value = "previous search";
+        elements["genre-filter"].value = "Drama";
+
+        links[i].click();
+        await submissions[i];
+
+        const url = new URL(requests[i]);
+
+        assert.equal(url.pathname, "/api/search");
+        assert.equal(url.searchParams.get("query"), "");
+        assert.equal(url.searchParams.get("media_type"), types[i]);
+        assert.equal(elements["media-type-filter"].value, types[i]);
+        assert.equal(elements["media-search"].value, "");
+        assert.equal(elements["genre-filter"].value, "");
+        assert.equal(elements["search-results"].hidden, false);
+    }
+
+    assert.equal(requests.length, 4);
 });
