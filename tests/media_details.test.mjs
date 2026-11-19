@@ -40,13 +40,19 @@ async function runMediaDetails(search, response) {
 
         URLSearchParams,
 
-        document: {
-            getElementById: () => container,
-            createElement: (tagName) => ({
-                tagName,
-                textContent: ""
-            })
-        },
+     document: {
+    getElementById: () => container,
+
+    createElement: (tagName) => ({
+        tagName,
+        textContent: "",
+        children: [],
+
+        appendChild(element) {
+            this.children.push(element);
+        }
+    })
+},
 
         fetch: async (url) => {
             requestedUrl = url;
@@ -112,7 +118,7 @@ test("HTTP 200 displays the correct media details", async () => {
         result.container.children.map((element) => element.textContent),
         [
             "The Dark Knight",
-            "Image unavailable",
+            "",
             "Type: movie",
             "Genre: Action",
             "Release Year: 2008",
