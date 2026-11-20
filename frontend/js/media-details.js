@@ -1,8 +1,10 @@
 const API_BASE_URL =
-    window.location.hostname === "127.0.0.1" ||
-    window.location.hostname === "localhost"
-        ? `${window.location.protocol}//${window.location.hostname}:5000`
-        : window.location.origin;
+    window.FINALTAKE_API_BASE_URL ||
+    (
+        ["localhost", "127.0.0.1"].includes(window.location.hostname)
+            ? `${window.location.protocol}//${window.location.hostname}:5000`
+            : window.location.origin
+    );
 const params = new URLSearchParams(window.location.search);
 const mediaId = params.get("id");
 const detailsContainer = document.getElementById("media-details");
@@ -33,8 +35,6 @@ function renderMediaDetails(media) {
     // Display media image or a fallback.
     const imageContainer = document.createElement("div");
     imageContainer.className = "media-image-container";
-
-    
 
 const fallbackPoster =
     media.title === "The Dark Knight"

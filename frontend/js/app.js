@@ -1,8 +1,10 @@
 const API_BASE_URL =
-    window.location.hostname === "127.0.0.1" ||
-    window.location.hostname === "localhost"
-        ? `${window.location.protocol}//${window.location.hostname}:5000`
-        : window.location.origin;
+    window.FINALTAKE_API_BASE_URL ||
+    (
+        ["localhost", "127.0.0.1"].includes(window.location.hostname)
+            ? `${window.location.protocol}//${window.location.hostname}:5000`
+            : window.location.origin
+    );
 const searchForm = document.querySelector(".hero-search");
 const searchInput = document.getElementById("media-search");
 const searchResultsSection = document.getElementById("search-results");
@@ -27,7 +29,7 @@ function renderSearchResults(results) {
         card.href =
             `pages/media-details.html?id=${encodeURIComponent(media.id)}`;
 
-      
+
 const image = document.createElement("div");
 image.className = "card-image";
 
@@ -101,7 +103,7 @@ if (searchForm && searchInput) {
         const mediaType = mediaTypeFilter.value;
         const sort = sortFilter.value;
 
-        if (!query) {
+        if (!query && !mediaType) {
             return;
         }
         const currentRequestId = ++latestSearchRequestId;
@@ -161,3 +163,15 @@ if (searchForm && searchInput) {
         }
     });
 }
+
+
+document.querySelectorAll("[data-browse-type]").forEach((link) => {
+    link.addEventListener("click", () => {
+        searchInput.value = "";
+        genreFilter.value = "";
+        mediaTypeFilter.value = link.dataset.browseType;
+        sortFilter.value = "";
+
+        searchForm.requestSubmit();
+    });
+});

@@ -155,10 +155,10 @@ jobs:
       - name: Validate search JavaScript syntax
         run: node --check frontend/js/app.js
 
-      - name: Run frontend API recovery integration test
+      - name: Run search and keyboard accessibility regression tests
         run: |
           set -o pipefail
-          node --test tests/search_integration.test.mjs 2>&1 | tee "$RUNNER_TEMP/search-tests.log"
+          node --test tests/search_integration.test.mjs tests/keyboard_accessibility.test.mjs 2>&1 | tee "$RUNNER_TEMP/search-tests.log"
 
       - name: Run media details regression tests
         run: |

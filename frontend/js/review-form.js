@@ -97,7 +97,7 @@ reviewForm.addEventListener("submit", async (event) => {
       return;
     }
 
-    
+
 reviewMessage.textContent =
   "Review submitted successfully!";
 

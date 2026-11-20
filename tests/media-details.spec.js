@@ -50,7 +50,7 @@ test("Displays media description and image from API", async ({ page }) => {
   const image = page.locator(".media-details-image");
 
   await expect(image).toBeVisible();
-  
+
   // Verify that the API-provided image takes priority.
 await expect(image).toHaveAttribute(
   "src",
