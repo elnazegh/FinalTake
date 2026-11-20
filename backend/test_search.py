@@ -478,12 +478,46 @@ class TestCategoryBrowsing(unittest.TestCase):
         self.client = app.test_client()
 
     def test_category_only_browsing(self):
+        catalog = [
+            {
+                "id": "1",
+                "title": "Movie",
+                "type": "movie",
+            },
+            {
+                "id": "2",
+                "title": "TV",
+                "type": "tv",
+            },
+            {
+                "id": "3",
+                "title": "Book",
+                "type": "book",
+            },
+            {
+                "id": "4",
+                "title": "Game",
+                "type": "game",
+            },
+        ]
+
         for media_type in ("movie", "tv", "book", "game"):
             with self.subTest(media_type=media_type):
-                response = self.client.get(
-                    "/api/search",
-                    query_string={"media_type": media_type}
-                )
+                with (
+                    patch("app.get_db_connection"),
+                    patch(
+                        "app.search_media",
+                        return_value=[
+                            item
+                            for item in catalog
+                            if item["type"] == media_type
+                        ]
+                    )
+                ):
+                    response = self.client.get(
+                        "/api/search",
+                        query_string={"media_type": media_type}
+                    )
 
                 self.assertEqual(response.status_code, 200)
 

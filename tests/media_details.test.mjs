@@ -41,6 +41,8 @@ async function runMediaDetails(
 
     let requestedUrl;
     const editLink = { hidden: true };
+    const deleteButton = { hidden: true, addEventListener: () => {} };
+    const deleteMessage = { hidden: true };
 
     const context = {
         window: {
@@ -55,7 +57,12 @@ async function runMediaDetails(
         URLSearchParams,
 
         document: {
-            getElementById: (id) => id === "media-details" ? container : editLink,
+            getElementById: (id) => ({
+                "media-details": container,
+                "edit-media-link": editLink,
+                "delete-media-button": deleteButton,
+                "delete-media-message": deleteMessage
+            })[id],
             createElement: (tagName) => ({
                 tagName,
                 textContent: "",
@@ -96,7 +103,7 @@ async function runMediaDetails(
     // Allow the asynchronous details request to finish.
     await new Promise((resolve) => setImmediate(resolve));
 
-    return { container, requestedUrl, editLink };
+    return { container, requestedUrl, editLink, deleteButton };
 }
 
 test("HTTP 404 displays Media not found", async () => {
@@ -127,6 +134,8 @@ test("Edit control is shown only to media managers", async () => {
     assert.equal(manager.editLink.hidden, false);
     assert.equal(manager.editLink.href, "edit-media.html?id=42");
     assert.equal(visitor.editLink.hidden, true);
+    assert.equal(manager.deleteButton.hidden, false);
+    assert.equal(visitor.deleteButton.hidden, true);
 });
 
 

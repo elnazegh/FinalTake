@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS media (
     image_url VARCHAR(500),
     release_year INT,
     description TEXT,
+    deleted_at TIMESTAMP NULL DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_media_title (title),

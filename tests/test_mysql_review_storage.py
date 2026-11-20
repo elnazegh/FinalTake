@@ -9,6 +9,7 @@ import os
 import sqlite3
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from backend.review import Review
 from backend.review_storage import MySQLReviewStore
@@ -190,6 +191,20 @@ class ReviewSQLApiTests(ReviewSQLFixture, unittest.TestCase):
         )
 
         app_module.mysql_review_store = self.store
+        self.media_lookup_patch = patch.object(
+            app_module,
+            "get_media_by_id",
+            return_value={"id": "1", "title": "The Dark Knight"},
+        )
+        self.media_titles_patch = patch.object(
+            app_module,
+            "load_media_titles",
+            return_value={"1": "The Dark Knight"},
+        )
+        self.media_lookup_patch.start()
+        self.media_titles_patch.start()
+        self.addCleanup(self.media_lookup_patch.stop)
+        self.addCleanup(self.media_titles_patch.stop)
         self.client = app_module.app.test_client()
         self.authenticate(1)
 

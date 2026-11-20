@@ -16,7 +16,18 @@ class ReviewRegressionTests(unittest.TestCase):
             "TESTING": True,
             "SECRET_KEY": "review-regression-test-key"
         }):
-            with patch("app.reviews", {}), patch("app.next_review_id", 1):
+            with (
+                patch("app.reviews", {}),
+                patch("app.next_review_id", 1),
+                patch("app.get_media_by_id", return_value=selected),
+                patch(
+                    "app.load_media_titles",
+                    return_value={
+                        item["id"]: item["title"]
+                        for item in media_items
+                    }
+                )
+            ):
                 client = app.test_client()
 
                 with client.session_transaction() as session:

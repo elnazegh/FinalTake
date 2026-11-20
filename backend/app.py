@@ -17,6 +17,7 @@ from urllib.parse import urlencode
 try:
     from .database import get_db_connection
     from .media import create_media_record
+    from .media import delete_media_record
     from .media import get_media
     from .media import list_media
     from .media import search_media
@@ -31,6 +32,7 @@ try:
 except ImportError:
     from database import get_db_connection
     from media import create_media_record
+    from media import delete_media_record
     from media import get_media
     from media import list_media
     from media import search_media
@@ -94,6 +96,50 @@ CORS(
 app.register_blueprint(tag_follow_bp)
 
 
+media_items = [
+    {
+        "id": "1",
+        "title": "The Dark Knight",
+        "type": "movie",
+        "genre": "Action",
+        "imageUrl": None,
+        "releaseYear": 2008
+    },
+    {
+        "id": "2",
+        "title": "Dark",
+        "type": "tv",
+        "genre": "Drama",
+        "imageUrl": None,
+        "releaseYear": 2017
+    },
+    {
+        "id": "3",
+        "title": "Darkest Hour",
+        "type": "movie",
+        "genre": "Drama",
+        "imageUrl": None,
+        "releaseYear": 2017
+    },
+    {
+        "id": "4",
+        "title": "Dune",
+        "type": "book",
+        "genre": "Science Fiction",
+        "imageUrl": None,
+        "releaseYear": 1965
+    },
+    {
+        "id": "5",
+        "title": "Dark Souls",
+        "type": "game",
+        "genre": "RPG",
+        "imageUrl": None,
+        "releaseYear": 2011
+    }
+]
+
+
 # Temporary in-memory review storage until
 # database review persistence is available.
 reviews = {}
@@ -153,7 +199,7 @@ def load_media_titles(media_ids):
         connection = get_db_connection()
 
         for media_id in unique_ids:
-            media = get_media(connection, media_id)
+            media = get_media(connection, media_id, include_deleted=True)
 
             if media is not None:
                 titles[media_id] = media["title"]
@@ -434,6 +480,31 @@ def update_media(media_id):
     return jsonify(media), 200
 
 
+@app.route("/api/media/<int:media_id>", methods=["DELETE"])
+def delete_media(media_id):
+    user_id = session.get("user_id")
+    if user_id is None:
+        return jsonify({"error": "Authentication required."}), 401
+
+    try:
+        connection = get_db_connection()
+        try:
+            if not user_can_manage_media(connection, user_id):
+                return jsonify({
+                    "error": "You do not have permission to manage media."
+                }), 403
+            deleted = delete_media_record(connection, media_id)
+        finally:
+            connection.close()
+    except Exception:
+        app.logger.exception("Media deletion failed")
+        return jsonify({"error": "Unable to delete media item."}), 500
+
+    if not deleted:
+        return jsonify({"error": "Media not found."}), 404
+    return jsonify({"message": "Media deleted successfully."}), 200
+
+
 # --------------------------------------------------
 # Review routes
 # --------------------------------------------------
@@ -466,13 +537,6 @@ def create_review():
             )
         }), 400
 
-    media = get_media_by_id(media_id)
-
-    if media is None:
-        return jsonify({
-            "error": "Media item not found."
-        }), 404
-
     if not Rating.is_valid_rating(rating):
         return jsonify({
             "error": (
@@ -494,6 +558,13 @@ def create_review():
         return jsonify({
             "error": str(error)
         }), 400
+
+    media = get_media_by_id(media_id)
+
+    if media is None:
+        return jsonify({
+            "error": "Media item not found."
+        }), 404
 
     if using_mysql_reviews():
         try:
@@ -635,8 +706,6 @@ def update_review(review_id):
             "error": "text is required."
         }), 400
 
-    media_titles = load_media_titles([review.media_id])
-
     try:
         review.edit_review(
             user_id=current_user_id,
@@ -658,6 +727,8 @@ def update_review(review_id):
             mysql_review_store.update_text(review_id, current_user_id, review.text)
         except Exception as error:
             return review_storage_unavailable(error)
+
+    media_titles = load_media_titles([review.media_id])
 
     return jsonify({
         "review": serialize_review(

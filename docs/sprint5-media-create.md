@@ -1,7 +1,6 @@
 # Media Catalog Management - Create Media
 
-Create, Read, and Update are delivered as separate pull requests. Delete
-remains out of scope.
+Create, Read, Update, and Delete are delivered as separate pull requests.
 
 ## API
 
@@ -26,8 +25,7 @@ permission on every create request regardless of what the frontend shows.
 `backend/schema.sql` uses `CREATE TABLE IF NOT EXISTS` for every table, so it
 can be run against a fresh database or an existing installation. It adds the
 `media` and `media_managers` tables and never alters or drops `users`,
-`password_reset_tokens` or any existing rows. There is no migration tool, so
-existing installations must run the file once, for example:
+`password_reset_tokens` or any existing rows. For example:
 
 ```
 mysql -u <admin_user> -p <database_name> < backend/schema.sql
@@ -35,6 +33,10 @@ mysql -u <admin_user> -p <database_name> < backend/schema.sql
 
 `-p` with no value makes the client prompt for the password, so it is not
 stored in shell history or in any file.
+
+Existing media tables are not altered by `CREATE TABLE IF NOT EXISTS`.
+Before deploying Delete Media to an existing installation, run the explicit
+soft-delete migration described below.
 
 ## Granting media management access
 
@@ -91,8 +93,7 @@ or delete a record to force the seed through.
 The MySQL `media` table is the source of truth after seeding. Reviews,
 ratings and favorites remain in memory and are not made persistent by Read.
 They retain media IDs as strings; keeping the legacy IDs stable is important
-for their current in-process references and existing tests. PR 4 (Delete)
-should decide how reviews of deleted media are handled.
+for their current in-process references and existing tests.
 
 `image_url` is validated as http or https on write. Pages that render it
 should still treat it as untrusted.
@@ -147,3 +148,76 @@ update persistence test. Eleven Node regression tests and four Playwright
 browser tests passed; those browser tests mock API responses. A separate
 local browser check also created and edited a new movie against the isolated
 MySQL database and confirmed its values after refreshing.
+
+## Delete Media (PR 4)
+
+`DELETE /api/media/<id>` requires an authenticated user listed in
+`media_managers`, checked on every request. It returns 200 with
+`{"message": "Media deleted successfully."}`, 401 without a session, 403
+without permission, 404 for a missing or already-deleted record, and a generic
+500 for database errors. A conditional, parameterized update sets `deleted_at`
+to the database timestamp and commits; failures roll back. Concurrent
+deletions cannot both succeed.
+
+The row and its ID remain in MySQL. Catalog, search, details, and update
+exclude deleted rows; new reviews cannot be created for them. Existing
+reviews retain their media title through an internal lookup, and related
+reviews, ratings, favorites, comments, and tags are not deleted.
+
+### Migration for existing databases
+
+1. Back up the database and check the target and privileges with the database
+   administrator. Configure `DB_HOST`, `DB_USER`, `DB_PASSWORD`, and `DB_NAME`
+   for that database using the same environment or local `.env` used by
+   `backend/database.py`. Do not commit credentials. The migration account
+   needs permission to inspect metadata and alter `media`.
+2. From the repository root, run:
+
+   ```powershell
+   cd backend
+   python migrate_media_soft_delete.py
+   ```
+
+3. Check the printed foreign-key constraints and success message. The script
+   inspects media's incoming and outgoing foreign keys before adding a nullable
+   `deleted_at` column with a NULL default. Existing rows remain visible.
+   Run it again to verify it reports `deleted_at` already present.
+
+MySQL DDL implicitly commits; the schema alteration cannot be rolled back as
+part of an application transaction. If an incompatible `deleted_at` already
+exists, the script stops without changing it: inspect and resolve it manually
+after a backup. Existing non-NULL deletion timestamps are never cleared.
+Fresh installations get the column directly from `schema.sql`.
+
+The explicit seed never reactivates a soft-deleted seeded row or creates a
+duplicate in its place. An unchanged seeded row remains deleted; if its
+content differs from the original seed, the existing collision check stops
+the seed without overwriting it. Seed is for initial setup, not an automatic
+request-time operation or restore mechanism.
+
+### GUI demonstration
+
+1. As a manager, create a **new** `Sprint 5 Demo Movie`, type Movie, release
+   year 2026, genre Adventure. Do not delete seeded IDs 1–5.
+2. Search for the movie and open its details. Select **Delete Media**, check
+   that the confirmation names the movie, and cancel.
+3. Select **Delete Media** again and confirm. Check the success message, then
+   use **Back to Search**.
+4. Search for `Sprint 5 Demo Movie` and confirm there is no result. Reopen the
+   previous details URL and confirm it displays `Media not found.`
+
+Only managers see the control, and cancellation sends no DELETE. Failures
+are displayed without claiming success. No restore interface is provided.
+Reviews and other related data retain their existing storage behavior; in
+particular, in-memory review state does not survive a backend restart.
+
+### Validation
+
+Local validation used a disposable MySQL 8.0.40 instance: 113 backend tests
+and 187 repository Python tests passed, including Create, Read, Update, Delete,
+rollback, review preservation, seed reruns, and concurrent deletion. A legacy
+schema with an existing row and foreign key was migrated twice without losing
+either. Eleven Node tests and all 50 Playwright browser tests passed (browser
+suite uses mocked APIs). A separate live browser check created a new demo
+movie, canceled and confirmed deletion, then verified search and details
+after refresh and after restarting the isolated backend.
