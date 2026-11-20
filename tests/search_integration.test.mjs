@@ -626,3 +626,75 @@ test("search results prioritize API images over bundled posters", async () => {
         "Poster or cover for The Dark Knight"
     );
 });
+
+test("search falls back to bundled poster when API image fails", async () => {
+    const elements = {
+        ".hero-search": createElement(),
+        "media-search": createElement(),
+        "search-results": createElement(),
+        "search-results-grid": createElement(),
+        "genre-filter": createElement(),
+        "media-type-filter": createElement(),
+        "sort-filter": createElement()
+    };
+
+    elements["media-search"].value = "dark";
+
+    const apiPoster = "/frontend/images/broken-poster.png";
+    const fallbackPoster = "images/dark-knight.jpeg";
+
+    const document = {
+        querySelector: (selector) => elements[selector],
+        getElementById: (id) => elements[id],
+        querySelectorAll: () => [],
+        createElement
+    };
+
+    const window = {
+        location: {
+            hostname: "127.0.0.1",
+            protocol: "http:",
+            origin: "http://127.0.0.1:5500",
+            href: "http://127.0.0.1:5500/frontend/index.html"
+        }
+    };
+
+    runInNewContext(appCode, {
+        window,
+        document,
+        fetch: async () => ({
+            ok: true,
+            json: async () => ({
+                results: [{
+                    id: "1",
+                    title: "The Dark Knight",
+                    type: "movie",
+                    releaseYear: 2008,
+                    imageUrl: apiPoster
+                }]
+            })
+        }),
+        URL,
+        URLSearchParams,
+        console: { error() {} }
+    });
+
+    await elements[".hero-search"].submit({
+        preventDefault() {}
+    });
+
+    const grid = elements["search-results-grid"];
+
+    assert.equal(grid.children.length, 1);
+
+    const poster = grid.children[0].children[0].children[0];
+
+    // The API image is selected first.
+    assert.equal(poster.src, apiPoster);
+
+    // Simulate the browser reporting an image-load failure.
+    poster.onerror();
+
+    // The bundled poster is selected as the fallback.
+    assert.equal(poster.src, fallbackPoster);
+});
