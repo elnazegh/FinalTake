@@ -21,6 +21,10 @@
   },
   "homepage": "https://github.com/elnazegh/FinalTake#readme",
   "devDependencies": {
-    "@playwright/test": "^1.64.0"
+    "@playwright/test": "^1.64.0",
+    "eslint": "10.14.0"
+  },
+  "overrides": {
+    "minimatch": "11.0.5"
   }
 }
