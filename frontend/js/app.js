@@ -38,7 +38,9 @@ const posterImages = {
     "Dark Souls": "images/dark-souls.jpeg"
 };
 
-const posterUrl = posterImages[media.title] || media.imageUrl;
+
+const fallbackPoster = posterImages[media.title] || null;
+const posterUrl = media.imageUrl || fallbackPoster;
 
 if (posterUrl) {
     const poster = document.createElement("img");
@@ -47,14 +49,24 @@ if (posterUrl) {
     poster.className = "search-poster";
 
     poster.onerror = () => {
-        image.replaceChildren();
-        image.textContent = media.type;
+        const fallbackUrl = fallbackPoster
+            ? new URL(fallbackPoster, window.location.href).href
+            : null;
+
+        if (fallbackUrl && poster.src !== fallbackUrl) {
+            poster.src = fallbackPoster;
+        } else {
+            poster.onerror = null;
+            image.replaceChildren();
+            image.textContent = media.type || "Image unavailable";
+        }
     };
 
     image.appendChild(poster);
 } else {
-    image.textContent = media.type;
+    image.textContent = media.type || "Image unavailable";
 }
+
 
 
         const content = document.createElement("div");

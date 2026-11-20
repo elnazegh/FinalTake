@@ -339,3 +339,78 @@ test("latest search results remain visible when responses arrive out of order", 
         "Dune"
     );
 });
+
+
+test("search results prioritize API images over bundled posters", async () => {
+    const elements = {
+        ".hero-search": createElement(),
+        "media-search": createElement(),
+        "search-results": createElement(),
+        "search-results-grid": createElement(),
+        "genre-filter": createElement(),
+        "media-type-filter": createElement(),
+        "sort-filter": createElement()
+    };
+
+    elements["media-search"].value = "dark";
+
+    const apiPoster = "/frontend/images/api-poster.png";
+
+    async function mockFetch() {
+        return {
+            ok: true,
+            json: async () => ({
+                results: [{
+                    id: "1",
+                    title: "The Dark Knight",
+                    type: "movie",
+                    releaseYear: 2008,
+                    imageUrl: apiPoster
+                }]
+            })
+        };
+    }
+
+    const document = {
+        querySelector: (selector) => elements[selector],
+        getElementById: (id) => elements[id],
+        createElement
+    };
+
+    const window = {
+        location: {
+            hostname: "127.0.0.1",
+            protocol: "http:",
+            origin: "http://127.0.0.1:5500"
+        }
+    };
+
+    runInNewContext(appCode, {
+        window,
+        document,
+        fetch: mockFetch,
+        URLSearchParams,
+        console: { error() {} }
+    });
+
+    const form = elements[".hero-search"];
+    const grid = elements["search-results-grid"];
+
+    await form.submit({ preventDefault() {} });
+
+    assert.equal(grid.children.length, 1);
+
+    const resultCard = grid.children[0];
+    const imageContainer = resultCard.children[0];
+
+    assert.equal(imageContainer.children.length, 1);
+
+    const poster = imageContainer.children[0];
+
+    assert.equal(poster.src, apiPoster);
+    assert.equal(poster.className, "search-poster");
+    assert.equal(
+        poster.alt,
+        "Poster or cover for The Dark Knight"
+    );
+});

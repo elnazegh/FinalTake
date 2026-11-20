@@ -35,10 +35,12 @@ function renderMediaDetails(media) {
     imageContainer.className = "media-image-container";
 
     
+
 const fallbackPoster =
-    String(mediaId) === "1"
+    media.title === "The Dark Knight"
         ? "../images/dark-knight.jpeg"
         : null;
+
 
 const posterUrl = media.imageUrl || fallbackPoster;
 

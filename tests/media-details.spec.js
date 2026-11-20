@@ -62,3 +62,37 @@ await expect(image).toHaveAttribute(
     image.evaluate((img) => img.complete && img.naturalWidth > 0)
   ).toBe(true);
 });
+
+test("Does not use Dark Knight poster for a different movie with ID 1", async ({ page }) => {
+  await page.route("**/api/media/1", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        id: "1",
+        title: "Inception",
+        type: "movie",
+        genre: "Sci-Fi",
+        releaseYear: 2010,
+        description: "A science fiction movie.",
+        imageUrl: null
+      })
+    });
+  });
+
+  await page.goto(
+    "http://127.0.0.1:5500/frontend/pages/media-details.html?id=1"
+  );
+
+  await expect(
+    page.getByRole("heading", { name: "Inception" })
+  ).toBeVisible();
+
+  await expect(
+    page.locator(".media-details-image")
+  ).toHaveCount(0);
+
+  await expect(
+    page.locator(".media-image-container")
+  ).toHaveText("Image unavailable");
+});
