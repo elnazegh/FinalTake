@@ -1,8 +1,10 @@
 const API_BASE_URL =
-    window.location.hostname === "127.0.0.1" ||
-    window.location.hostname === "localhost"
-        ? `${window.location.protocol}//${window.location.hostname}:5000`
-        : window.location.origin;
+    window.FINALTAKE_API_BASE_URL ||
+    (
+        ["localhost", "127.0.0.1"].includes(window.location.hostname)
+            ? `${window.location.protocol}//${window.location.hostname}:5000`
+            : window.location.origin
+    );
 const params = new URLSearchParams(window.location.search);
 const mediaId = params.get("id");
 const detailsContainer = document.getElementById("media-details");
@@ -34,20 +36,39 @@ function renderMediaDetails(media) {
     const imageContainer = document.createElement("div");
     imageContainer.className = "media-image-container";
 
-    if (media.imageUrl) {
-        const image = document.createElement("img");
-        image.src = media.imageUrl;
-        image.alt = `Poster or cover for ${media.title || "media"}`;
-        image.className = "media-details-image";
 
-        image.onerror = () => {
+const fallbackPoster =
+    String(mediaId) === "1"
+        ? "../images/dark-knight.jpeg"
+        : null;
+
+const posterUrl = media.imageUrl || fallbackPoster;
+
+if (posterUrl) {
+    const image = document.createElement("img");
+    image.src = posterUrl;
+    image.alt = `Poster or cover for ${media.title || "media"}`;
+    image.className = "media-details-image";
+
+    image.onerror = () => {
+        const fallbackUrl = fallbackPoster
+            ? new URL(fallbackPoster, window.location.href).href
+            : null;
+
+        if (fallbackUrl && image.src !== fallbackUrl) {
+            image.src = fallbackPoster;
+        } else {
+            image.onerror = null;
+            image.remove();
             imageContainer.textContent = "Image unavailable";
-        };
+        }
+    };
 
-        imageContainer.appendChild(image);
-    } else {
-        imageContainer.textContent = "Image unavailable";
-    }
+    imageContainer.appendChild(image);
+} else {
+    imageContainer.textContent = "Image unavailable";
+}
+
 
     detailsContainer.appendChild(title);
     detailsContainer.appendChild(imageContainer);

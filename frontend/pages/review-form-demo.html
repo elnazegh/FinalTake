@@ -17,6 +17,10 @@
 
   <main class="auth-page">
     <section class="auth-card">
+
+<a id="back-to-media" class="back-to-media-button" href="../index.html">Back to Movie Details
+</a>
+
       <h1>Write a Review</h1>
       <p>Share your thoughts about this media.</p>
 
@@ -55,6 +59,23 @@
       <p id="review-message" role="status" aria-live="polite"></p>
     </section>
   </main>
+
+<script>
+  (() => {
+    const mediaId = new URLSearchParams(
+      window.location.search
+    ).get("id");
+
+    const backLink = document.getElementById("back-to-media");
+
+    if (mediaId) {
+      backLink.href =
+        `media-details.html?id=${encodeURIComponent(mediaId)}`;
+    } else {
+      backLink.textContent = "Back to Home";
+    }
+  })();
+</script>
 
   <script src="../js/review-form.js"></script>
 </body>
