@@ -47,3 +47,11 @@ jobs:
       - name: Deploy to staging
         id: deployment
         uses: actions/deploy-pages@v4
+
+      - name: Verify deployed staging homepage
+        env:
+          STAGING_URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          curl --fail --location --silent --show-error \
+            --retry 5 --retry-delay 3 --retry-all-errors \
+            --max-time 20 "$STAGING_URL" > /dev/null

@@ -26,6 +26,7 @@ try:
     from .media import validate_media_payload
     from .rating import Rating
     from .review import Review
+    from .review_storage import MySQLReviewStore
     from .tag import normalize_tags
     from .tag_follow_api import tag_follow_bp
 except ImportError:
@@ -40,6 +41,7 @@ except ImportError:
     from media import validate_media_payload
     from rating import Rating
     from review import Review
+    from review_storage import MySQLReviewStore
     from tag import normalize_tags
     from tag_follow_api import tag_follow_bp
 
@@ -60,6 +62,15 @@ app.config["SESSION_COOKIE_SECURE"] = (
 )
 
 app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(hours=8)
+
+# Memory remains the default to avoid changing existing demos/tests without
+# an explicit migration. Set REVIEW_STORAGE_BACKEND=mysql to persist reviews.
+app.config["REVIEW_STORAGE_BACKEND"] = os.environ.get(
+    "REVIEW_STORAGE_BACKEND", "memory"
+).strip().lower()
+if app.config["REVIEW_STORAGE_BACKEND"] not in ("memory", "mysql"):
+    raise ValueError("REVIEW_STORAGE_BACKEND must be 'memory' or 'mysql'.")
+
 
 CORS(
     app,
@@ -89,6 +100,16 @@ app.register_blueprint(tag_follow_bp)
 # database review persistence is available.
 reviews = {}
 next_review_id = 1
+mysql_review_store = MySQLReviewStore(get_db_connection)
+
+
+def using_mysql_reviews():
+    return app.config["REVIEW_STORAGE_BACKEND"] == "mysql"
+
+
+def review_storage_unavailable(error):
+    app.logger.exception("Review storage operation failed")
+    return jsonify({"error": "Review storage unavailable."}), 503
 
 
 class MediaLookupError(Exception):
@@ -218,7 +239,7 @@ def search():
     media_type = request.args.get("media_type", "").strip()
     sort = request.args.get("sort", "").strip()
 
-    if not query:
+    if not query and not media_type:
         return jsonify({
             "results": []
         }), 200
@@ -501,10 +522,15 @@ def create_review():
             "error": str(error)
         }), 400
 
-    review_id = next_review_id
-    next_review_id += 1
-
-    reviews[review_id] = review
+    if using_mysql_reviews():
+        try:
+            review_id = mysql_review_store.create(review)
+        except Exception as error:
+            return review_storage_unavailable(error)
+    else:
+        review_id = next_review_id
+        next_review_id += 1
+        reviews[review_id] = review
 
     return jsonify({
         "review": serialize_review(
@@ -543,19 +569,21 @@ def get_reviews():
 
         selected_tag = normalized_tags[0]
 
+    if using_mysql_reviews():
+        try:
+            review_records = mysql_review_store.list(media_id, selected_tag)
+        except Exception as error:
+            return review_storage_unavailable(error)
+    else:
+        review_records = reviews.items()
+
     selected_reviews = []
 
-    for review_id, review in reviews.items():
-        if media_id is not None:
-            if str(review.media_id) != str(media_id):
-                continue
-
-        if (
-            selected_tag is not None
-            and selected_tag not in review.tags
-        ):
+    for review_id, review in review_records:
+        if media_id is not None and str(review.media_id) != str(media_id):
             continue
-
+        if selected_tag is not None and selected_tag not in review.tags:
+            continue
         selected_reviews.append((review_id, review))
 
     media_titles = load_media_titles(
@@ -569,7 +597,6 @@ def get_reviews():
             review,
             media_titles
         )
-
         if review_data is not None:
             results.append(review_data)
 
@@ -580,7 +607,13 @@ def get_reviews():
 
 @app.route("/api/reviews/<int:review_id>", methods=["GET"])
 def get_review(review_id):
-    review = reviews.get(review_id)
+    if using_mysql_reviews():
+        try:
+            review = mysql_review_store.get(review_id)
+        except Exception as error:
+            return review_storage_unavailable(error)
+    else:
+        review = reviews.get(review_id)
 
     if review is None:
         return jsonify({
@@ -607,7 +640,13 @@ def update_review(review_id):
             "error": "Authentication required."
         }), 401
 
-    review = reviews.get(review_id)
+    if using_mysql_reviews():
+        try:
+            review = mysql_review_store.get(review_id)
+        except Exception as error:
+            return review_storage_unavailable(error)
+    else:
+        review = reviews.get(review_id)
 
     if review is None:
         return jsonify({
@@ -641,6 +680,12 @@ def update_review(review_id):
             "error": str(error)
         }), 400
 
+    if using_mysql_reviews():
+        try:
+            mysql_review_store.update_text(review_id, current_user_id, review.text)
+        except Exception as error:
+            return review_storage_unavailable(error)
+
     return jsonify({
         "review": serialize_review(
             review_id,
@@ -658,7 +703,13 @@ def remove_review(review_id):
         return jsonify({
             "error": "Authentication required."
         }), 401
-    review = reviews.get(review_id)
+    if using_mysql_reviews():
+        try:
+            review = mysql_review_store.get(review_id)
+        except Exception as error:
+            return review_storage_unavailable(error)
+    else:
+        review = reviews.get(review_id)
 
     if review is None:
         return jsonify({
@@ -673,7 +724,13 @@ def remove_review(review_id):
             "error": str(error)
         }), 403
 
-    del reviews[review_id]
+    if using_mysql_reviews():
+        try:
+            mysql_review_store.delete(review_id, current_user_id)
+        except Exception as error:
+            return review_storage_unavailable(error)
+    else:
+        del reviews[review_id]
 
     return jsonify({
         "message": "Review deleted."

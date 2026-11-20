@@ -10,7 +10,19 @@ const script = readFileSync(
 );
 
 // Run the actual frontend JavaScript with simulated API responses.
-async function runMediaDetails(search, response, canManageMedia = false) {
+async function runMediaDetails(
+    search,
+    response,
+    canManageMediaOrApiBaseUrl = false,
+    apiBaseUrl
+) {
+    const canManageMedia = (
+        typeof canManageMediaOrApiBaseUrl === "boolean"
+        && canManageMediaOrApiBaseUrl
+    );
+    apiBaseUrl = typeof canManageMediaOrApiBaseUrl === "string"
+        ? canManageMediaOrApiBaseUrl
+        : apiBaseUrl;
     const container = {
         textContent: "",
         children: [],
@@ -34,6 +46,7 @@ async function runMediaDetails(search, response, canManageMedia = false) {
 
     const context = {
         window: {
+            FINALTAKE_API_BASE_URL: apiBaseUrl,
             location: {
                 hostname: "127.0.0.1",
                 protocol: "http:",
@@ -52,7 +65,12 @@ async function runMediaDetails(search, response, canManageMedia = false) {
             })[id],
             createElement: (tagName) => ({
                 tagName,
-                textContent: ""
+                textContent: "",
+                children: [],
+
+                appendChild(element) {
+                    this.children.push(element);
+                }
             })
         },
 
@@ -141,12 +159,20 @@ test("HTTP 200 displays the correct media details", async () => {
         result.container.children.map((element) => element.textContent),
         [
             "The Dark Knight",
-            "Image unavailable",
+            "",
             "Type: movie",
             "Genre: Action",
             "Release Year: 2008",
             "No description available."
         ]
+    );
+    const posterContainer = result.container.children[1];
+
+    assert.equal(posterContainer.children.length, 1);
+    assert.equal(posterContainer.children[0].tagName, "img");
+    assert.equal(
+        posterContainer.children[0].src,
+        "../images/dark-knight.jpeg"
     );
 });
 
@@ -182,5 +208,18 @@ test("network failure displays a generic error message", async () => {
     assert.equal(
         result.container.children.length,
         0
+    );
+});
+
+test("media details uses configured API base URL on staging", async () => {
+    const result = await runMediaDetails(
+        "?id=1",
+        { ok: false, status: 404 },
+        "https://api.example.com"
+    );
+
+    assert.equal(
+        result.requestedUrl,
+        "https://api.example.com/api/media/1"
     );
 });
