@@ -7,6 +7,7 @@ export default [
         console: "readonly",
         document: "readonly",
         fetch: "readonly",
+        URL: "readonly",
         URLSearchParams: "readonly",
         window: "readonly"
       }
