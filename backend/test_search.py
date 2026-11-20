@@ -470,3 +470,31 @@ class SearchApiTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestCategoryBrowsing(unittest.TestCase):
+    def setUp(self):
+        app.config["TESTING"] = True
+        self.client = app.test_client()
+
+    def test_category_only_browsing(self):
+        for media_type in ("movie", "tv", "book", "game"):
+            with self.subTest(media_type=media_type):
+                response = self.client.get(
+                    "/api/search",
+                    query_string={"media_type": media_type}
+                )
+
+                self.assertEqual(response.status_code, 200)
+
+                results = response.get_json()["results"]
+                self.assertGreater(len(results), 0)
+
+                for media in results:
+                    self.assertEqual(media["type"], media_type)
+
+    def test_empty_search_without_category_stays_empty(self):
+        response = self.client.get("/api/search")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json(), {"results": []})
