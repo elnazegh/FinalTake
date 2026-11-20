@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Add Media | FinalTake</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+
+<body>
+  <header class="site-header">
+    <div class="logo">
+      <a href="../index.html">FinalTake</a>
+    </div>
+
+    <nav class="main-nav" aria-label="Main navigation">
+      <a href="../index.html">Home</a>
+      <a href="add-media.html" class="active">Add Media</a>
+    </nav>
+  </header>
+
+  <main class="auth-page">
+    <section class="auth-card media-form-card">
+      <h2>Add Media</h2>
+      <p id="add-media-intro">
+        Add a movie, TV show, book, or game to the catalog.
+      </p>
+
+      <p id="add-media-notice" role="alert" hidden></p>
+
+      <form id="add-media-form" novalidate hidden>
+        <label for="media-title">Title *</label>
+        <input
+          type="text"
+          id="media-title"
+          maxlength="255"
+          required
+          aria-describedby="media-title-error"
+        >
+        <span class="field-error" id="media-title-error" role="alert"></span>
+
+        <label for="media-type">Media Type *</label>
+        <select
+          id="media-type"
+          required
+          aria-describedby="media-type-error"
+        >
+          <option value="">Select a type</option>
+          <option value="movie">Movie</option>
+          <option value="tv">TV Show</option>
+          <option value="book">Book</option>
+          <option value="game">Game</option>
+        </select>
+        <span class="field-error" id="media-type-error" role="alert"></span>
+
+        <label for="media-release-year">Release Year</label>
+        <input
+          type="number"
+          id="media-release-year"
+          step="1"
+          aria-describedby="media-release-year-error"
+        >
+        <span
+          class="field-error"
+          id="media-release-year-error"
+          role="alert"
+        ></span>
+
+        <label for="media-genre">Genre</label>
+        <input
+          type="text"
+          id="media-genre"
+          maxlength="100"
+          aria-describedby="media-genre-error"
+        >
+        <span class="field-error" id="media-genre-error" role="alert"></span>
+
+        <label for="media-image-url">Image URL</label>
+        <input
+          type="url"
+          id="media-image-url"
+          maxlength="500"
+          placeholder="https://example.com/cover.jpg"
+          aria-describedby="media-image-url-error"
+        >
+        <span
+          class="field-error"
+          id="media-image-url-error"
+          role="alert"
+        ></span>
+
+        <label for="media-description">Description</label>
+        <textarea
+          id="media-description"
+          rows="5"
+          maxlength="5000"
+          aria-describedby="media-description-error"
+        ></textarea>
+        <span
+          class="field-error"
+          id="media-description-error"
+          role="alert"
+        ></span>
+
+        <button type="submit" id="add-media-submit">Add Media</button>
+      </form>
+
+      <p id="add-media-error" role="alert" class="form-error" hidden></p>
+
+      <div id="add-media-success" class="media-success" role="status" hidden>
+        <h3>Media added successfully</h3>
+        <p>
+          <strong id="created-media-title"></strong> was saved to the catalog.
+        </p>
+        <p>Media ID: <strong id="created-media-id"></strong></p>
+        <button type="button" id="add-another-media">Add Another</button>
+      </div>
+
+      <div class="auth-links">
+        <a href="../index.html">Back to Home</a>
+      </div>
+    </section>
+  </main>
+
+  <script src="../js/add-media.js"></script>
+</body>
+</html>
