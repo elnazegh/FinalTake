@@ -5,7 +5,6 @@ from pathlib import Path
 from uuid import uuid4
 
 import mysql.connector
-
 from app import app
 from seed_media import DEMO_MEDIA, seed_demo_media
 
@@ -319,6 +318,85 @@ class MySQLDatabaseIntegrationTests(unittest.TestCase):
                         "DELETE FROM users WHERE user_id = %s",
                         (user_id,),
                     )
+                    connection.commit()
+                finally:
+                    cursor.close()
+            finally:
+                connection.close()
+
+    def test_media_update_persists_in_mysql(self):
+        username = f"ci_{uuid4().hex[:12]}"
+        user_id = None
+        media_id = None
+        connection = mysql.connector.connect(**self.db_config)
+        try:
+            cursor = connection.cursor()
+            try:
+                cursor.execute(
+                    "INSERT INTO users (username, email, password_hash) "
+                    "VALUES (%s, %s, %s)",
+                    (username, f"{username}@example.com", "unused-hash"),
+                )
+                user_id = cursor.lastrowid
+                cursor.execute(
+                    "INSERT INTO media_managers (user_id) VALUES (%s)",
+                    (user_id,),
+                )
+                connection.commit()
+            finally:
+                cursor.close()
+        finally:
+            connection.close()
+
+        original_secret_key = app.config.get("SECRET_KEY")
+        app.config["SECRET_KEY"] = "media-update-integration-test-key"
+        try:
+            client = app.test_client()
+            with client.session_transaction() as session:
+                session["user_id"] = user_id
+            created = client.post("/api/media", json={
+                "title": "Sprint 5 Demo Movie",
+                "type": "movie",
+                "releaseYear": 2026,
+                "genre": "Science Fiction",
+            })
+            self.assertEqual(created.status_code, 201)
+            media_id = int(created.get_json()["id"])
+            self.assertGreater(media_id, 5)
+            description = (
+                "A sample adventure movie used to demonstrate database updates."
+            )
+            updated = client.patch(f"/api/media/{media_id}", json={
+                "genre": "Adventure", "description": description,
+            })
+            self.assertEqual(updated.status_code, 200)
+            self.assertEqual(updated.get_json()["id"], str(media_id))
+            self.assertEqual(updated.get_json()["genre"], "Adventure")
+            refreshed = client.get(f"/api/media/{media_id}")
+            self.assertEqual(refreshed.status_code, 200)
+            self.assertEqual(refreshed.get_json(), updated.get_json())
+            self.assertEqual(refreshed.get_json()["title"], "Sprint 5 Demo Movie")
+            self.assertEqual(refreshed.get_json()["releaseYear"], 2026)
+            self.assertEqual(refreshed.get_json()["description"], description)
+            unchanged = client.patch(
+                f"/api/media/{media_id}", json={"genre": "Adventure"}
+            )
+            self.assertEqual(unchanged.status_code, 200)
+            cleared = client.patch(
+                f"/api/media/{media_id}", json={"description": None}
+            )
+            self.assertEqual(cleared.status_code, 200)
+            self.assertIsNone(client.get(f"/api/media/{media_id}").get_json()["description"])
+        finally:
+            app.config["SECRET_KEY"] = original_secret_key
+            connection = mysql.connector.connect(**self.db_config)
+            try:
+                cursor = connection.cursor()
+                try:
+                    if media_id is not None:
+                        cursor.execute("DELETE FROM media WHERE media_id = %s", (media_id,))
+                    if user_id is not None:
+                        cursor.execute("DELETE FROM users WHERE user_id = %s", (user_id,))
                     connection.commit()
                 finally:
                     cursor.close()

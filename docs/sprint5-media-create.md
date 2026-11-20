@@ -1,7 +1,7 @@
 # Media Catalog Management - Create Media
 
-Create and Read are delivered as separate pull requests. Update and Delete
-remain out of scope.
+Create, Read, and Update are delivered as separate pull requests. Delete
+remains out of scope.
 
 ## API
 
@@ -17,7 +17,7 @@ remain out of scope.
 - Returns 201 with `id`, `message`, and the created `media` object.
 
 `GET /api/media/permissions` returns `{"canManageMedia": true|false}` so the
-frontend can show or hide the Add Media link. It only reports the current
+frontend can show or hide media management controls. It only reports the current
 user's own permission and never grants anything. The backend enforces
 permission on every create request regardless of what the frontend shows.
 
@@ -73,7 +73,8 @@ interface after the demo catalog has been seeded.
 
 Before switching an existing database to the Read endpoints, run the schema
 and seed steps below. The seed is explicit and is never run as part of a
-normal application request.
+normal application request. It is intended for initial database setup, not
+for routinely restoring demo data after users edit the catalog.
 
 ```powershell
 cd backend
@@ -95,3 +96,54 @@ should decide how reviews of deleted media are handled.
 
 `image_url` is validated as http or https on write. Pages that render it
 should still treat it as untrusted.
+
+## Update Media (PR 3)
+
+`PATCH /api/media/<id>` requires a logged-in user listed in `media_managers`.
+The server checks permission on every request, independently of the GUI.
+Send a nonempty JSON object containing any of `title`, `type`, `genre`,
+`releaseYear`, `imageUrl`, and `description`. Create's validation rules apply.
+Unknown fields are rejected. Omitted fields are left unchanged; optional
+fields may be cleared with `null`. The ID cannot be changed.
+
+For example:
+
+```json
+{"genre": "Adventure", "description": "A sample adventure movie used to demonstrate database updates."}
+```
+
+On success the response is HTTP 200 with the complete updated media object in
+the same camelCase format as `GET /api/media/<id>`. A no-op update also returns
+200. Invalid or empty input returns 400, an unauthenticated request returns
+401, a non-manager receives 403, and a missing record returns 404. Database
+failures return a generic 500.
+
+### GUI and demonstration
+
+1. Log in as a media manager and create a **new** movie named
+   `Sprint 5 Demo Movie`, with type Movie, release year 2026, and genre
+   Science Fiction. Do not edit the seeded IDs 1–5 for this demonstration.
+2. Find the movie in search and open its details. Select **Edit Media**.
+   The form is prefilled; change the genre to `Adventure` and the description
+   to `A sample adventure movie used to demonstrate database updates.`
+3. Save, confirm the success message, return to details, and refresh. The
+   updated genre and description remain visible.
+
+The Edit control is shown only when the permissions endpoint confirms manager
+access. The update endpoint independently enforces that access.
+
+### Limitations and validation
+
+The seed checks exact legacy values. If an administrator edits a seeded row,
+a later seed run reports a collision and makes no changes. Investigate and
+back up the database before resolving it manually; do not overwrite edits or
+disable collision checks. Reviews, ratings, and favorites retain their
+existing in-memory behavior. Concurrent edits to the same field use the last
+committed value; there is no version-conflict warning.
+
+Local validation on the Update branch: 101 backend tests and 187 repository
+tests passed with isolated MySQL 8.0.40, including Create, Read, and the new
+update persistence test. Eleven Node regression tests and four Playwright
+browser tests passed; those browser tests mock API responses. A separate
+local browser check also created and edited a new movie against the isolated
+MySQL database and confirmed its values after refreshing.

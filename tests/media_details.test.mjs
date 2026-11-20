@@ -10,7 +10,19 @@ const script = readFileSync(
 );
 
 // Run the actual frontend JavaScript with simulated API responses.
-async function runMediaDetails(search, response, apiBaseUrl) {
+async function runMediaDetails(
+    search,
+    response,
+    canManageMediaOrApiBaseUrl = false,
+    apiBaseUrl
+) {
+    const canManageMedia = (
+        typeof canManageMediaOrApiBaseUrl === "boolean"
+        && canManageMediaOrApiBaseUrl
+    );
+    apiBaseUrl = typeof canManageMediaOrApiBaseUrl === "string"
+        ? canManageMediaOrApiBaseUrl
+        : apiBaseUrl;
     const container = {
         textContent: "",
         children: [],
@@ -28,6 +40,7 @@ async function runMediaDetails(search, response, apiBaseUrl) {
     };
 
     let requestedUrl;
+    const editLink = { hidden: true };
 
     const context = {
         window: {
@@ -41,21 +54,26 @@ async function runMediaDetails(search, response, apiBaseUrl) {
 
         URLSearchParams,
 
-     document: {
-    getElementById: () => container,
+        document: {
+            getElementById: (id) => id === "media-details" ? container : editLink,
+            createElement: (tagName) => ({
+                tagName,
+                textContent: "",
+                children: [],
 
-    createElement: (tagName) => ({
-        tagName,
-        textContent: "",
-        children: [],
-
-        appendChild(element) {
-            this.children.push(element);
-        }
-    })
-},
+                appendChild(element) {
+                    this.children.push(element);
+                }
+            })
+        },
 
         fetch: async (url) => {
+            if (url.endsWith("/permissions")) {
+                return {
+                    ok: true,
+                    json: async () => ({ canManageMedia })
+                };
+            }
             requestedUrl = url;
 
             // Simulate a network failure when an Error is provided.
@@ -78,7 +96,7 @@ async function runMediaDetails(search, response, apiBaseUrl) {
     // Allow the asynchronous details request to finish.
     await new Promise((resolve) => setImmediate(resolve));
 
-    return { container, requestedUrl };
+    return { container, requestedUrl, editLink };
 }
 
 test("HTTP 404 displays Media not found", async () => {
@@ -96,6 +114,19 @@ test("HTTP 404 displays Media not found", async () => {
         result.container.textContent,
         "Media not found."
     );
+});
+
+test("Edit control is shown only to media managers", async () => {
+    const response = {
+        ok: true,
+        status: 200,
+        json: async () => ({ id: "42", title: "Demo", type: "movie" })
+    };
+    const manager = await runMediaDetails("?id=42", response, true);
+    const visitor = await runMediaDetails("?id=42", response, false);
+    assert.equal(manager.editLink.hidden, false);
+    assert.equal(manager.editLink.href, "edit-media.html?id=42");
+    assert.equal(visitor.editLink.hidden, true);
 });
 
 

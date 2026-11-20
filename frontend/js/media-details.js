@@ -8,7 +8,25 @@ const API_BASE_URL =
 const params = new URLSearchParams(window.location.search);
 const mediaId = params.get("id");
 const detailsContainer = document.getElementById("media-details");
+const editMediaLink = document.getElementById("edit-media-link");
 
+async function showEditLink() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/media/permissions`, {
+            credentials: "include"
+        });
+        if (!response.ok) {
+            throw new Error(`Permission check failed (${response.status})`);
+        }
+        const permissions = await response.json();
+        if (permissions.canManageMedia === true) {
+            editMediaLink.href = `edit-media.html?id=${encodeURIComponent(mediaId)}`;
+            editMediaLink.hidden = false;
+        }
+    } catch (error) {
+        console.error("Unable to check media permissions:", error);
+    }
+}
 
 function renderMediaDetails(media) {
     detailsContainer.innerHTML = "";
@@ -102,6 +120,7 @@ if (!response.ok) {
 
         const media = await response.json();
         renderMediaDetails(media);
+        await showEditLink();
 
     } catch (error) {
         detailsContainer.textContent =
