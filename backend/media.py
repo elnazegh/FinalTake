@@ -12,6 +12,133 @@ MIN_RELEASE_YEAR = 1000
 # Allow announced titles that have not been released yet.
 RELEASE_YEAR_FUTURE_ALLOWANCE = 10
 
+MEDIA_COLUMNS = """
+    media_id,
+    title,
+    media_type,
+    genre,
+    image_url,
+    release_year,
+    description
+"""
+
+SORT_ORDERS = {
+    "title_asc": "title ASC, media_id ASC",
+    "title_desc": "title DESC, media_id ASC",
+    "year_asc": "release_year ASC, title ASC, media_id ASC",
+    "year_desc": "release_year DESC, title ASC, media_id ASC"
+}
+DEFAULT_SORT_ORDER = "media_id ASC"
+
+
+def normalize_media_id(value):
+    """Return a positive integer ID, or None when the value is invalid."""
+    if isinstance(value, bool):
+        return None
+
+    if isinstance(value, int):
+        return value if value > 0 else None
+
+    if isinstance(value, str) and value.isascii() and value.isdigit():
+        media_id = int(value)
+        return media_id if media_id > 0 else None
+
+    return None
+
+
+def serialize_media(row):
+    if row is None:
+        return None
+
+    return {
+        "id": str(row["media_id"]),
+        "title": row["title"],
+        "type": row["media_type"],
+        "genre": row["genre"],
+        "imageUrl": row["image_url"],
+        "releaseYear": row["release_year"],
+        "description": row["description"]
+    }
+
+
+def list_media(connection):
+    cursor = connection.cursor(dictionary=True)
+
+    try:
+        cursor.execute(
+            f"""
+            SELECT {MEDIA_COLUMNS}
+            FROM media
+            ORDER BY {DEFAULT_SORT_ORDER}
+            """
+        )
+
+        return [serialize_media(row) for row in cursor.fetchall()]
+
+    finally:
+        cursor.close()
+
+
+def get_media(connection, media_id):
+    media_id = normalize_media_id(media_id)
+
+    if media_id is None:
+        return None
+
+    cursor = connection.cursor(dictionary=True)
+
+    try:
+        cursor.execute(
+            f"""
+            SELECT {MEDIA_COLUMNS}
+            FROM media
+            WHERE media_id = %s
+            """,
+            (media_id,)
+        )
+
+        return serialize_media(cursor.fetchone())
+
+    finally:
+        cursor.close()
+
+
+def escape_like(value):
+    return value.replace("!", "!!").replace("%", "!%").replace("_", "!_")
+
+
+def search_media(connection, query, genre="", media_type="", sort=""):
+    conditions = ["LOWER(title) LIKE LOWER(%s) ESCAPE '!'"]
+    parameters = [f"%{escape_like(query)}%"]
+
+    if genre:
+        conditions.append("LOWER(genre) = LOWER(%s)")
+        parameters.append(genre)
+
+    if media_type:
+        conditions.append("LOWER(media_type) = LOWER(%s)")
+        parameters.append(media_type)
+
+    where_clause = " AND ".join(conditions)
+    order_by = SORT_ORDERS.get(sort, DEFAULT_SORT_ORDER)
+    cursor = connection.cursor(dictionary=True)
+
+    try:
+        cursor.execute(
+            f"""
+            SELECT {MEDIA_COLUMNS}
+            FROM media
+            WHERE {where_clause}
+            ORDER BY {order_by}
+            """,
+            tuple(parameters)
+        )
+
+        return [serialize_media(row) for row in cursor.fetchall()]
+
+    finally:
+        cursor.close()
+
 
 def clean_optional_text(value, field_name, max_length):
     if value is None:
