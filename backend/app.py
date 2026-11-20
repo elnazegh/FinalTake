@@ -198,7 +198,7 @@ def search():
     media_type = request.args.get("media_type", "").strip()
     sort = request.args.get("sort", "").strip()
 
-    if not query:
+    if not query and not media_type:
         return jsonify({
             "results": []
         }), 200
@@ -210,7 +210,7 @@ def search():
     results = [
         media
         for media in media_items
-        if normalized_query in media["title"].casefold()
+        if (not normalized_query or normalized_query in media["title"].casefold())
         and (
             not normalized_genre
             or media["genre"].casefold() == normalized_genre

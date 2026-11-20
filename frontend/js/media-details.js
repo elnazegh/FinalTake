@@ -36,7 +36,7 @@ function renderMediaDetails(media) {
     const imageContainer = document.createElement("div");
     imageContainer.className = "media-image-container";
 
-    
+
 const fallbackPoster =
     String(mediaId) === "1"
         ? "../images/dark-knight.jpeg"

@@ -29,7 +29,7 @@ function renderSearchResults(results) {
         card.href =
             `pages/media-details.html?id=${encodeURIComponent(media.id)}`;
 
-      
+
 const image = document.createElement("div");
 image.className = "card-image";
 
@@ -91,7 +91,7 @@ if (searchForm && searchInput) {
         const mediaType = mediaTypeFilter.value;
         const sort = sortFilter.value;
 
-        if (!query) {
+        if (!query && !mediaType) {
             return;
         }
         const currentRequestId = ++latestSearchRequestId;
@@ -151,3 +151,15 @@ if (searchForm && searchInput) {
         }
     });
 }
+
+
+document.querySelectorAll("[data-browse-type]").forEach((link) => {
+    link.addEventListener("click", () => {
+        searchInput.value = "";
+        genreFilter.value = "";
+        mediaTypeFilter.value = link.dataset.browseType;
+        sortFilter.value = "";
+
+        searchForm.requestSubmit();
+    });
+});
