@@ -24,7 +24,8 @@ test("Character counter updates while typing", async ({ page }) => {
     .toHaveText("12 / 5000 characters");
 });
 
-test("Successful review submission sends correct data", async ({ page }) => {
+
+test("Successful review submission redirects to media details", async ({ page }) => {
   let submittedData = null;
 
   await page.route("**/api/reviews", async (route) => {
@@ -53,8 +54,9 @@ test("Successful review submission sends correct data", async ({ page }) => {
     name: "Submit Review"
   }).click();
 
-  await expect(page.locator("#review-message"))
-    .toHaveText("Review submitted successfully!");
+  await expect(page).toHaveURL(
+    "http://127.0.0.1:5500/frontend/pages/media-details.html?id=1"
+  );
 
   expect(submittedData).toEqual({
     media_id: "1",
@@ -62,6 +64,7 @@ test("Successful review submission sends correct data", async ({ page }) => {
     text: "Great movie!"
   });
 });
+
 
 test("Unauthenticated review submission shows login message", async ({ page }) => {
   await page.route("**/api/reviews", async (route) => {

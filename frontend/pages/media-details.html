@@ -8,20 +8,48 @@
 </head>
 
 <body>
-
   <header class="site-header">
     <div class="logo">
       <a href="../index.html">FinalTake</a>
     </div>
   </header>
 
-  <main class="auth-page">
-    <section class="auth-card">
-      <a href="../index.html">← Back to Search</a>
+<main class="auth-page media-details-page">
+<section class="auth-card media-details-card">
+   <a href="../index.html" class="back-to-media-button">
+      Back to Search
+    </a>
 
-      <div id="media-details">
-        <p>Loading media details...</p>
-      </div>
+    <div id="media-details">
+      <p>Loading media details...</p>
+    </div>
+
+<a
+  id="write-review-link"
+  class="btn"
+  href="#"
+>
+  Write a Review
+</a>
+
+
+<script>
+  (() => {
+    const selectedMediaId = new URLSearchParams(
+      window.location.search
+    ).get("id");
+
+    const reviewLink = document.getElementById("write-review-link");
+
+    if (reviewLink && selectedMediaId) {
+      reviewLink.href =
+        `review-form-demo.html?id=${encodeURIComponent(selectedMediaId)}`;
+      reviewLink.hidden = false;
+    } else if (reviewLink) {
+      reviewLink.hidden = true;
+    }
+  })();
+</script>
 
       <a id="edit-media-link" class="signup-button" hidden>Edit Media</a>
 

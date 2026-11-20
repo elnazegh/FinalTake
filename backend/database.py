@@ -1,8 +1,14 @@
+
 import os
+from pathlib import Path
+
 import mysql.connector
 from dotenv import load_dotenv
 
-load_dotenv()
+# Load the private .env file from the backend folder.
+# Settings already defined in the terminal take priority.
+load_dotenv(Path(__file__).resolve().parent / ".env")
+
 
 def get_db_connection():
     connection = mysql.connector.connect(
@@ -13,6 +19,7 @@ def get_db_connection():
     )
 
     return connection
+
 
 if __name__ == "__main__":
     connection = get_db_connection()
