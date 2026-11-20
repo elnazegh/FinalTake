@@ -12,6 +12,144 @@ MIN_RELEASE_YEAR = 1000
 # Allow announced titles that have not been released yet.
 RELEASE_YEAR_FUTURE_ALLOWANCE = 10
 
+MEDIA_COLUMNS = """
+    media_id,
+    title,
+    media_type,
+    genre,
+    image_url,
+    release_year,
+    description
+"""
+
+SORT_ORDERS = {
+    "title_asc": "title ASC, media_id ASC",
+    "title_desc": "title DESC, media_id ASC",
+    "year_asc": "release_year ASC, title ASC, media_id ASC",
+    "year_desc": "release_year DESC, title ASC, media_id ASC"
+}
+DEFAULT_SORT_ORDER = "media_id ASC"
+
+UPDATE_MEDIA_FIELDS = {
+    "title": "title",
+    "type": "media_type",
+    "genre": "genre",
+    "imageUrl": "image_url",
+    "releaseYear": "release_year",
+    "description": "description",
+}
+
+
+def normalize_media_id(value):
+    """Return a positive integer ID, or None when the value is invalid."""
+    if isinstance(value, bool):
+        return None
+
+    if isinstance(value, int):
+        return value if value > 0 else None
+
+    if isinstance(value, str) and value.isascii() and value.isdigit():
+        media_id = int(value)
+        return media_id if media_id > 0 else None
+
+    return None
+
+
+def serialize_media(row):
+    if row is None:
+        return None
+
+    return {
+        "id": str(row["media_id"]),
+        "title": row["title"],
+        "type": row["media_type"],
+        "genre": row["genre"],
+        "imageUrl": row["image_url"],
+        "releaseYear": row["release_year"],
+        "description": row["description"]
+    }
+
+
+def list_media(connection):
+    cursor = connection.cursor(dictionary=True)
+
+    try:
+        cursor.execute(
+            f"""
+            SELECT {MEDIA_COLUMNS}
+            FROM media
+            WHERE deleted_at IS NULL
+            ORDER BY {DEFAULT_SORT_ORDER}
+            """
+        )
+
+        return [serialize_media(row) for row in cursor.fetchall()]
+
+    finally:
+        cursor.close()
+
+
+def get_media(connection, media_id, *, include_deleted=False):
+    media_id = normalize_media_id(media_id)
+
+    if media_id is None:
+        return None
+
+    cursor = connection.cursor(dictionary=True)
+
+    try:
+        visibility = "" if include_deleted else " AND deleted_at IS NULL"
+        cursor.execute(
+            f"""
+            SELECT {MEDIA_COLUMNS}
+            FROM media
+            WHERE media_id = %s{visibility}
+            """,
+            (media_id,)
+        )
+
+        return serialize_media(cursor.fetchone())
+
+    finally:
+        cursor.close()
+
+
+def escape_like(value):
+    return value.replace("!", "!!").replace("%", "!%").replace("_", "!_")
+
+
+def search_media(connection, query, genre="", media_type="", sort=""):
+    conditions = ["deleted_at IS NULL", "LOWER(title) LIKE LOWER(%s) ESCAPE '!'"]
+    parameters = [f"%{escape_like(query)}%"]
+
+    if genre:
+        conditions.append("LOWER(genre) = LOWER(%s)")
+        parameters.append(genre)
+
+    if media_type:
+        conditions.append("LOWER(media_type) = LOWER(%s)")
+        parameters.append(media_type)
+
+    where_clause = " AND ".join(conditions)
+    order_by = SORT_ORDERS.get(sort, DEFAULT_SORT_ORDER)
+    cursor = connection.cursor(dictionary=True)
+
+    try:
+        cursor.execute(
+            f"""
+            SELECT {MEDIA_COLUMNS}
+            FROM media
+            WHERE {where_clause}
+            ORDER BY {order_by}
+            """,
+            tuple(parameters)
+        )
+
+        return [serialize_media(row) for row in cursor.fetchall()]
+
+    finally:
+        cursor.close()
+
 
 def clean_optional_text(value, field_name, max_length):
     if value is None:
@@ -50,57 +188,74 @@ def clean_image_url(value):
     return image_url
 
 
-def validate_media_payload(data):
-    """Validate a create-media request and return clean column values."""
+def validate_media_payload(data, *, partial=False):
+    """Validate media fields and return clean column values."""
     if not isinstance(data, dict):
         raise ValueError("Request body must be a JSON object.")
 
-    title = data.get("title")
-    media_type = data.get("type")
-    release_year = data.get("releaseYear")
+    values = {}
 
-    if not isinstance(title, str) or not title.strip():
-        raise ValueError("title is required.")
+    if not partial or "title" in data:
+        title = data.get("title")
+        if not isinstance(title, str) or not title.strip():
+            raise ValueError("title is required.")
 
-    title = title.strip()
-
-    if len(title) > MAX_TITLE_LENGTH:
-        raise ValueError(
-            f"title cannot exceed {MAX_TITLE_LENGTH} characters."
-        )
-
-    if not isinstance(media_type, str) or not media_type.strip():
-        raise ValueError("type is required.")
-
-    media_type = media_type.strip().casefold()
-
-    if media_type not in VALID_MEDIA_TYPES:
-        raise ValueError("type must be movie, tv, book, or game.")
-
-    if release_year is not None:
-        # bool is a subclass of int, so it must be rejected explicitly.
-        if isinstance(release_year, bool) or not isinstance(release_year, int):
-            raise ValueError("releaseYear must be a whole number.")
-
-        max_year = datetime.now().year + RELEASE_YEAR_FUTURE_ALLOWANCE
-
-        if release_year < MIN_RELEASE_YEAR or release_year > max_year:
+        title = title.strip()
+        if len(title) > MAX_TITLE_LENGTH:
             raise ValueError(
-                f"releaseYear must be between {MIN_RELEASE_YEAR} "
-                f"and {max_year}."
+                f"title cannot exceed {MAX_TITLE_LENGTH} characters."
             )
+        values["title"] = title
 
-    return {
-        "title": title,
-        "media_type": media_type,
-        "genre": clean_optional_text(
-            data.get("genre"), "genre", MAX_GENRE_LENGTH
-        ),
-        "image_url": clean_image_url(data.get("imageUrl")),
-        "release_year": release_year,
-        "description": clean_optional_text(
+    if not partial or "type" in data:
+        media_type = data.get("type")
+        if not isinstance(media_type, str) or not media_type.strip():
+            raise ValueError("type is required.")
+        media_type = media_type.strip().casefold()
+        if media_type not in VALID_MEDIA_TYPES:
+            raise ValueError("type must be movie, tv, book, or game.")
+        values["media_type"] = media_type
+
+    if not partial or "releaseYear" in data:
+        release_year = data.get("releaseYear")
+        if release_year is not None:
+            # bool is a subclass of int, so it must be rejected explicitly.
+            if isinstance(release_year, bool) or not isinstance(release_year, int):
+                raise ValueError("releaseYear must be a whole number.")
+
+            max_year = datetime.now().year + RELEASE_YEAR_FUTURE_ALLOWANCE
+            if release_year < MIN_RELEASE_YEAR or release_year > max_year:
+                raise ValueError(
+                    f"releaseYear must be between {MIN_RELEASE_YEAR} "
+                    f"and {max_year}."
+                )
+        values["release_year"] = release_year
+
+    if not partial or "genre" in data:
+        values["genre"] = clean_optional_text(
+            data.get("genre"), "genre", MAX_GENRE_LENGTH)
+    if not partial or "imageUrl" in data:
+        values["image_url"] = clean_image_url(data.get("imageUrl"))
+    if not partial or "description" in data:
+        values["description"] = clean_optional_text(
             data.get("description"), "description", MAX_DESCRIPTION_LENGTH
         )
+    return values
+
+
+def validate_media_update(data):
+    if not isinstance(data, dict):
+        raise ValueError("Request body must be a JSON object.")
+    if not data:
+        raise ValueError("At least one media field is required.")
+    if set(data) - UPDATE_MEDIA_FIELDS.keys():
+        raise ValueError("Request contains unknown media fields.")
+
+    validated = validate_media_payload(data, partial=True)
+    return {
+        column: validated[column]
+        for column in UPDATE_MEDIA_FIELDS.values()
+        if column in validated
     }
 
 
@@ -166,3 +321,65 @@ def create_media_record(connection, media_data):
         "releaseYear": media_data["release_year"],
         "description": media_data["description"]
     }
+
+
+def update_media_record(connection, media_id, data):
+    """Update only supplied fields and return the persisted media object."""
+    updates = validate_media_update(data)
+    media_id = normalize_media_id(media_id)
+    if media_id is None:
+        return None
+
+    cursor = connection.cursor(dictionary=True)
+    try:
+        cursor.execute(
+            "SELECT media_id FROM media "
+            "WHERE media_id = %s AND deleted_at IS NULL FOR UPDATE",
+            (media_id,)
+        )
+        if cursor.fetchone() is None:
+            connection.rollback()
+            return None
+
+        assignments = ", ".join(f"{column} = %s" for column in updates)
+        cursor.execute(
+            f"UPDATE media SET {assignments} WHERE media_id = %s",
+            (*updates.values(), media_id)
+        )
+        cursor.execute(
+            f"SELECT {MEDIA_COLUMNS} FROM media WHERE media_id = %s FOR UPDATE",
+            (media_id,)
+        )
+        media = serialize_media(cursor.fetchone())
+        connection.commit()
+        return media
+    except Exception:
+        connection.rollback()
+        raise
+    finally:
+        cursor.close()
+
+
+def delete_media_record(connection, media_id):
+    """Atomically mark an active media record as deleted."""
+    media_id = normalize_media_id(media_id)
+    if media_id is None:
+        return False
+
+    cursor = None
+    try:
+        cursor = connection.cursor()
+        cursor.execute(
+            "UPDATE media SET deleted_at = CURRENT_TIMESTAMP "
+            "WHERE media_id = %s AND deleted_at IS NULL",
+            (media_id,)
+        )
+        deleted = cursor.rowcount == 1
+        connection.commit()
+        return deleted
+    except Exception:
+        connection.rollback()
+        raise
+    finally:
+        if cursor is not None:
+            cursor.close()

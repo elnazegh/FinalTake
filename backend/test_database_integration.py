@@ -5,8 +5,8 @@ from pathlib import Path
 from uuid import uuid4
 
 import mysql.connector
-
 from app import app
+from seed_media import DEMO_MEDIA, seed_demo_media
 
 
 @unittest.skipUnless(
@@ -47,8 +47,85 @@ class MySQLDatabaseIntegrationTests(unittest.TestCase):
                         cursor.execute(statement)
 
                 connection.commit()
+                seed_demo_media(connection)
             finally:
                 cursor.close()
+        finally:
+            connection.close()
+
+    def test_demo_media_seed_is_idempotent_and_preserves_ids(self):
+        connection = mysql.connector.connect(**self.db_config)
+
+        try:
+            cursor = connection.cursor()
+            try:
+                schema_path = Path(__file__).with_name("schema.sql")
+
+                for statement in schema_path.read_text().split(";"):
+                    statement = statement.strip()
+
+                    if statement:
+                        cursor.execute(statement)
+
+                connection.commit()
+            finally:
+                cursor.close()
+
+            inserted_first = seed_demo_media(connection)
+            inserted_second = seed_demo_media(connection)
+
+            self.assertEqual(inserted_first, 0)
+            self.assertEqual(inserted_second, 0)
+
+            cursor = connection.cursor()
+            try:
+                cursor.execute(
+                    """
+                    SELECT media_id, title, media_type
+                    FROM media
+                    WHERE media_id BETWEEN 1 AND 5
+                    ORDER BY media_id
+                    """
+                )
+                rows = cursor.fetchall()
+            finally:
+                cursor.close()
+
+            self.assertEqual(len(rows), len(DEMO_MEDIA))
+            self.assertEqual(
+                [(row[0], row[1], row[2]) for row in rows],
+                [
+                    (
+                        item["media_id"],
+                        item["title"],
+                        item["media_type"]
+                    )
+                    for item in DEMO_MEDIA
+                ]
+            )
+
+            client = app.test_client()
+            catalog_response = client.get("/api/media")
+            details_response = client.get("/api/media/4")
+            search_response = client.get(
+                "/api/search",
+                query_string={"query": "DUNE"}
+            )
+
+            self.assertEqual(catalog_response.status_code, 200)
+            self.assertEqual(
+                [item["id"] for item in catalog_response.get_json()["media"]
+                 if int(item["id"]) <= 5],
+                ["1", "2", "3", "4", "5"]
+            )
+            self.assertEqual(details_response.status_code, 200)
+            self.assertEqual(details_response.get_json()["title"], "Dune")
+            self.assertEqual(search_response.status_code, 200)
+            self.assertEqual(
+                search_response.get_json()["results"][0]["id"],
+                "4"
+            )
+
         finally:
             connection.close()
 
@@ -167,6 +244,7 @@ class MySQLDatabaseIntegrationTests(unittest.TestCase):
 
             self.assertEqual(response.status_code, 201)
             media_id = int(response.get_json()["id"])
+            self.assertGreater(media_id, 5)
 
             # Retrieve the record through a NEW MySQL connection.
             connection = mysql.connector.connect(**self.db_config)
@@ -197,6 +275,30 @@ class MySQLDatabaseIntegrationTests(unittest.TestCase):
             self.assertEqual(record[5], "Persistence check.")
             self.assertIsNotNone(record[6])
 
+            details_response = client.get(f"/api/media/{media_id}")
+            self.assertEqual(details_response.status_code, 200)
+            self.assertEqual(
+                details_response.get_json()["title"],
+                title
+            )
+
+            list_response = client.get("/api/media")
+            self.assertEqual(list_response.status_code, 200)
+            self.assertIn(
+                str(media_id),
+                [item["id"] for item in list_response.get_json()["media"]]
+            )
+
+            search_response = client.get(
+                "/api/search",
+                query_string={"query": title, "media_type": "game"}
+            )
+            self.assertEqual(search_response.status_code, 200)
+            self.assertEqual(
+                search_response.get_json()["results"][0]["id"],
+                str(media_id)
+            )
+
         finally:
             app.config["SECRET_KEY"] = original_secret_key
 
@@ -216,6 +318,85 @@ class MySQLDatabaseIntegrationTests(unittest.TestCase):
                         "DELETE FROM users WHERE user_id = %s",
                         (user_id,),
                     )
+                    connection.commit()
+                finally:
+                    cursor.close()
+            finally:
+                connection.close()
+
+    def test_media_update_persists_in_mysql(self):
+        username = f"ci_{uuid4().hex[:12]}"
+        user_id = None
+        media_id = None
+        connection = mysql.connector.connect(**self.db_config)
+        try:
+            cursor = connection.cursor()
+            try:
+                cursor.execute(
+                    "INSERT INTO users (username, email, password_hash) "
+                    "VALUES (%s, %s, %s)",
+                    (username, f"{username}@example.com", "unused-hash"),
+                )
+                user_id = cursor.lastrowid
+                cursor.execute(
+                    "INSERT INTO media_managers (user_id) VALUES (%s)",
+                    (user_id,),
+                )
+                connection.commit()
+            finally:
+                cursor.close()
+        finally:
+            connection.close()
+
+        original_secret_key = app.config.get("SECRET_KEY")
+        app.config["SECRET_KEY"] = "media-update-integration-test-key"
+        try:
+            client = app.test_client()
+            with client.session_transaction() as session:
+                session["user_id"] = user_id
+            created = client.post("/api/media", json={
+                "title": "Sprint 5 Demo Movie",
+                "type": "movie",
+                "releaseYear": 2026,
+                "genre": "Science Fiction",
+            })
+            self.assertEqual(created.status_code, 201)
+            media_id = int(created.get_json()["id"])
+            self.assertGreater(media_id, 5)
+            description = (
+                "A sample adventure movie used to demonstrate database updates."
+            )
+            updated = client.patch(f"/api/media/{media_id}", json={
+                "genre": "Adventure", "description": description,
+            })
+            self.assertEqual(updated.status_code, 200)
+            self.assertEqual(updated.get_json()["id"], str(media_id))
+            self.assertEqual(updated.get_json()["genre"], "Adventure")
+            refreshed = client.get(f"/api/media/{media_id}")
+            self.assertEqual(refreshed.status_code, 200)
+            self.assertEqual(refreshed.get_json(), updated.get_json())
+            self.assertEqual(refreshed.get_json()["title"], "Sprint 5 Demo Movie")
+            self.assertEqual(refreshed.get_json()["releaseYear"], 2026)
+            self.assertEqual(refreshed.get_json()["description"], description)
+            unchanged = client.patch(
+                f"/api/media/{media_id}", json={"genre": "Adventure"}
+            )
+            self.assertEqual(unchanged.status_code, 200)
+            cleared = client.patch(
+                f"/api/media/{media_id}", json={"description": None}
+            )
+            self.assertEqual(cleared.status_code, 200)
+            self.assertIsNone(client.get(f"/api/media/{media_id}").get_json()["description"])
+        finally:
+            app.config["SECRET_KEY"] = original_secret_key
+            connection = mysql.connector.connect(**self.db_config)
+            try:
+                cursor = connection.cursor()
+                try:
+                    if media_id is not None:
+                        cursor.execute("DELETE FROM media WHERE media_id = %s", (media_id,))
+                    if user_id is not None:
+                        cursor.execute("DELETE FROM users WHERE user_id = %s", (user_id,))
                     connection.commit()
                 finally:
                     cursor.close()

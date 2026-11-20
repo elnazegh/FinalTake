@@ -1,11 +1,61 @@
+import os
 import unittest
-from backend import app as app_module
+from pathlib import Path
 
+import mysql.connector
+
+from backend import app as app_module
+from backend.seed_media import seed_demo_media
+
+
+@unittest.skipUnless(
+    os.getenv("RUN_MYSQL_INTEGRATION_TESTS") == "1",
+    "Requires isolated CI MySQL test database"
+)
 @unittest.skipUnless(
     hasattr(app_module, "normalize_tags"),
     "Tags functionality is not yet available on this branch"
 )
 class TagMediaIntegrationTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        if os.getenv("DB_NAME") != "finaltake_ci_test":
+            raise RuntimeError(
+                "Tag/media integration tests require "
+                "DB_NAME=finaltake_ci_test"
+            )
+
+        connection = mysql.connector.connect(
+            host=os.environ["DB_HOST"],
+            user=os.environ["DB_USER"],
+            password=os.environ["DB_PASSWORD"],
+            database=os.environ["DB_NAME"]
+        )
+
+        try:
+            cursor = connection.cursor()
+            try:
+                schema_path = (
+                    Path(__file__).parents[1]
+                    / "backend"
+                    / "schema.sql"
+                )
+
+                for statement in schema_path.read_text().split(";"):
+                    statement = statement.strip()
+
+                    if statement:
+                        cursor.execute(statement)
+
+                connection.commit()
+            finally:
+                cursor.close()
+
+            seed_demo_media(connection)
+
+        finally:
+            connection.close()
+
     def setUp(self):
         self.original_secret_key = app_module.app.config.get("SECRET_KEY")
         self.original_testing = app_module.app.config.get("TESTING")

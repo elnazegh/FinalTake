@@ -8,7 +8,29 @@ const API_BASE_URL =
 const params = new URLSearchParams(window.location.search);
 const mediaId = params.get("id");
 const detailsContainer = document.getElementById("media-details");
+const editMediaLink = document.getElementById("edit-media-link");
+const deleteMediaButton = document.getElementById("delete-media-button");
+const deleteMediaMessage = document.getElementById("delete-media-message");
+let mediaTitle = "";
 
+async function showEditLink() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/media/permissions`, {
+            credentials: "include"
+        });
+        if (!response.ok) {
+            throw new Error(`Permission check failed (${response.status})`);
+        }
+        const permissions = await response.json();
+        if (permissions.canManageMedia === true) {
+            editMediaLink.href = `edit-media.html?id=${encodeURIComponent(mediaId)}`;
+            editMediaLink.hidden = false;
+            deleteMediaButton.hidden = false;
+        }
+    } catch (error) {
+        console.error("Unable to check media permissions:", error);
+    }
+}
 
 function renderMediaDetails(media) {
     detailsContainer.innerHTML = "";
@@ -101,7 +123,9 @@ if (!response.ok) {
 }
 
         const media = await response.json();
+        mediaTitle = media.title;
         renderMediaDetails(media);
+        await showEditLink();
 
     } catch (error) {
         detailsContainer.textContent =
@@ -110,5 +134,43 @@ if (!response.ok) {
         console.error("Media details request failed:", error);
     }
 }
+
+deleteMediaButton.addEventListener("click", async () => {
+    if (deleteMediaButton.disabled) return;
+    if (!window.confirm(`Delete "${mediaTitle}" from the catalog?`)) return;
+
+    deleteMediaButton.disabled = true;
+    deleteMediaMessage.hidden = true;
+    try {
+        const response = await fetch(
+            `${API_BASE_URL}/api/media/${encodeURIComponent(mediaId)}`,
+            { method: "DELETE", credentials: "include" }
+        );
+        if (response.status !== 200) {
+            if (response.status === 401 || response.status === 403) {
+                deleteMediaMessage.textContent = "You are not authorized to delete this media.";
+            } else if (response.status === 404) {
+                deleteMediaMessage.textContent = "Media not found or already deleted.";
+            } else {
+                deleteMediaMessage.textContent = "Unable to delete media. Please try again.";
+            }
+            deleteMediaMessage.hidden = false;
+            return;
+        }
+        detailsContainer.hidden = true;
+        editMediaLink.hidden = true;
+        deleteMediaButton.hidden = true;
+        document.getElementById("reviews-section").hidden = true;
+        deleteMediaMessage.textContent =
+            "Media deleted successfully. Use Back to Search to return to the catalog.";
+        deleteMediaMessage.hidden = false;
+    } catch (error) {
+        console.error("Media deletion failed:", error);
+        deleteMediaMessage.textContent = "Unable to delete media. Please try again.";
+        deleteMediaMessage.hidden = false;
+    } finally {
+        deleteMediaButton.disabled = false;
+    }
+});
 
 loadMediaDetails();
