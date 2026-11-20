@@ -96,6 +96,50 @@ CORS(
 app.register_blueprint(tag_follow_bp)
 
 
+media_items = [
+    {
+        "id": "1",
+        "title": "The Dark Knight",
+        "type": "movie",
+        "genre": "Action",
+        "imageUrl": None,
+        "releaseYear": 2008
+    },
+    {
+        "id": "2",
+        "title": "Dark",
+        "type": "tv",
+        "genre": "Drama",
+        "imageUrl": None,
+        "releaseYear": 2017
+    },
+    {
+        "id": "3",
+        "title": "Darkest Hour",
+        "type": "movie",
+        "genre": "Drama",
+        "imageUrl": None,
+        "releaseYear": 2017
+    },
+    {
+        "id": "4",
+        "title": "Dune",
+        "type": "book",
+        "genre": "Science Fiction",
+        "imageUrl": None,
+        "releaseYear": 1965
+    },
+    {
+        "id": "5",
+        "title": "Dark Souls",
+        "type": "game",
+        "genre": "RPG",
+        "imageUrl": None,
+        "releaseYear": 2011
+    }
+]
+
+
 # Temporary in-memory review storage until
 # database review persistence is available.
 reviews = {}
@@ -493,13 +537,6 @@ def create_review():
             )
         }), 400
 
-    media = get_media_by_id(media_id)
-
-    if media is None:
-        return jsonify({
-            "error": "Media item not found."
-        }), 404
-
     if not Rating.is_valid_rating(rating):
         return jsonify({
             "error": (
@@ -521,6 +558,13 @@ def create_review():
         return jsonify({
             "error": str(error)
         }), 400
+
+    media = get_media_by_id(media_id)
+
+    if media is None:
+        return jsonify({
+            "error": "Media item not found."
+        }), 404
 
     if using_mysql_reviews():
         try:
@@ -662,8 +706,6 @@ def update_review(review_id):
             "error": "text is required."
         }), 400
 
-    media_titles = load_media_titles([review.media_id])
-
     try:
         review.edit_review(
             user_id=current_user_id,
@@ -685,6 +727,8 @@ def update_review(review_id):
             mysql_review_store.update_text(review_id, current_user_id, review.text)
         except Exception as error:
             return review_storage_unavailable(error)
+
+    media_titles = load_media_titles([review.media_id])
 
     return jsonify({
         "review": serialize_review(
